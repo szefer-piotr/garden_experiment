@@ -1,0 +1,119 @@
+---
+title: FUNGI, HERBIVORES AND PREDATORS AS DETERMINANTS OF SECONDARY SUCCESSION IN
+  TROPICAL RAINFOREST
+author: "Piotr Szefer, Vojtech Novotny et al."
+date: "February 1, 2017"
+output: pdf_document
+---
+
+## Introduction
+
+Secondary forests are of increasing importance as more tropical forests are being disturbed or destroyed every year (Hansen et al. 2010). For a long time, whenever biodiversity maintanance and ecosystem functioning were at stake, forest regenerating via secondary regrowth was considered to be of a second importance. However in the last few decades more evidence accumulated for important role of secondary forests in maintaining high diveresity and ecosystem function of tropical bioms (Chazdon 2014). Secondary forests regain their structure and community composition relatively fast and can play an important role in the conservation and restoration (Dunn 2004, Chazdon et al. 2009). 
+
+Studies of succcession, despite long history had difficulties to provide robust successional theory and to give direct answers to many ecological questions concerning changes of vegetation in time. Therefore secondary succession as a process remains understudied and at the current state of knowledge highly unpredictable (Norden 2015, Crouzeilles 2016).
+
+Understanding tropical forest dynamics and it abilities to regenerate is a valuable ecological knowledge and at the same time a tool for management. Only recently evidence were produced for the strong effect of insects, fungi (Bagchi et al 2014) and predators (Sem XXXX) on vegetation population dynamics in tropics. These test, focused on insect and fungi pathogens exclusion, revealed their abilities to modyfy the community composition at the seed-to-seedling tranisitional stage through the negative density dependence (ref). These results have strong implications to successional study and suggest potentially important role at the initial stages of forest regrowth. These valuable results are forcing us to consider these groups as important drivers of tree population dynamics. While the influence of insect and fungi pathogens is important for a mature forest, it can change e.g. during post disturbance succession. 
+
+Data blocks which I will consider (provide the introduction for each of these points). It wasa never done before but few predictions were probably made, look for them. 
+
+1. Community descriptors responces. How community descriptor would change in 
+Plants and their pathogens and natural enemies are 
+It is difficult, due to the complexity of relationship between plants and their natural enemies, to predict the results of exclusion of 
+
+
+2. Trends in herbivory pressure
+
+3. Phylogeny and traits of trees
+Norden et al (2012) suggests that the phylogenetic evenness incrasing during the succession is caused by recruitment of late successional species into the community. However what allows for colonisation is unknown, we tested if we would be able to remove filters related to biotich intercations by altering the fungi predators and herbivores in the small scale plots. 
+Herbivores, connected with the species 
+Traits change during succession (Fukami et al. 2005, Buzzard et al. 2015) and it can be approximated by the growth-defence tradof underlying the leaf economic spectrum. However these relationship may change due to biotic factors. Plants released from the herbivory pressure 
+
+<<<
+Classic ecological theories based on competition (examples) are difficult to apply to successional processes, because of high number of species showing complex nonlinear relationships which can also be modified by abiotic site conditions. Succession, depeding on local and regional contexts, can take different trajectories which in turn may have pronounced effects on the successional results. Factors giving directions to the  trajectories are unknown and often ascribed to the random processes within the successional communitites, invasive species, regional influences. For many ecosystems those successional trajectories are unknown.
+>>>
+
+>>>
+Plant species competition should be considered in context of their interaction network. Biotic factors have potential to strongly affect the competitive outcome (citation needed). Recent findings pointed out the high importance of pathogenic fungi and plant-soil feedbacks caused by soil microbiota (Bagchi et al 2014). Accumulation of pathogens in soil, causig negative plant soil feedback, can drive the successional processes. In complex communities also changes of control regimes were shown to be a force responsible for the vegetation change (Shmitz...).
+>>>
+
+Many difficulties arise in answering important questions in successional studies. Main difficulty is that succession usually involves many species interacting in space and time. Plant-soil feedback framework is is limited in number of interacting species in the community that can be tested for the soil feedback. Successional theorieswould benefit greatly form long term, large scale studies.
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+
+Study of the succession usually focus on the species diversity and composition, basal area and number of stems (), which are used as a proxy for maturity of the ecosystem. Therefore we wanted to focus on how these properties might change under different biotic conditions.
+
+Biotic factors for a long time were known to affect the plant population dynamics, however they are rarely included in the successional study framework.
+
+We present a first community scale study, which focuses on three main biotic factors which are hypothesized to strongly influence the successional plant communities.
+
+We focused on initial succession of secondary tropical forest as the most dynamic stage. We were interested in how diversity, richness and species composition is affected by predators (birds, bats, ants), herbivores and pathogenic fungi.
+
+Succession is ofted described as a change in community structure in time. Plant community structure is often in successional studies described with species richness, species diversity, stem density and basal area. We therefore focused on those descriptors and analyze how different biotic factors can affect them.
+
+Effect of the swidden agriculture are small in size (ac. Xxx to xxx ha) gardens, whitch after few years are abandoned, and secondary succession proceeds in these plots. These areas create an excellent opportunities to study secondary succession. 
+
+Studies where exclosures were used (Van Bael ...) and studies where fungicides and insecticides showed promising results (Bagchi et al 2014). Herbivory addition?
+
+Plant species differ in their tolerance to herbivory and pathogen pressure. Thinking linearly, more tolerant species should be able to overcompete less tolerant species, which may be more competitive in the absence of predators and pathogens. Herbivory and pathogen pressure is assumed to be important in maintaining diverssity, having an equalizing effect on species within the community. Therfore we would expect, that in the absence of herbivores the diversity should be deacreased and the community structure simplified. This effect is expected to be stronger for pathogens than herbivores.
+
+## Materials and methods
+
+### Phylogeny
+
+We estimated the phylogenetic relationships between 126 angiosperms and two gymnosperms sampled in lowland rainforest in Madang Province, Papua New Guinea using published sequence data (Novotný et al. 2002, 2010, Whitfeld et al. 2012).
+
+This tree was then pruned to include only our 57 focal species. The phylogenetic relationships between species in large plant genera are often hard to resolve using sequences of the same genes that are appropriate for resolving familial and ordinal level relationships (Weiblen et al. 2006). Typically plant community phylogenies are also unbalanced, containing many representatives from single genera along with taxonomically isolated individuals from across the plant phylogeny (as is the case here). As such we took a stepwise approach to estimating our phylogeny and employed wider constraints. Firstly, we used published sequence data to create individual subtrees for the three largest clades in our data set. We used sequences of the chloroplast encoded ribulose-1,5-bisphosphate carboxylase (rbcL) gene and the internal transcribed spacer region of nuclear ribosomal DNA (ITS) for Ficus (Moraceae), rbcL and NADH-plastoquinone oxidoreductase (ndhF) for Euphorbiacae including Macaranga and rbcL and the ribosomal protein S16 (RpS16) for Rubiaceae, including Psychotria. We aligned all genes using ClustalX2.1, we used a full multiple alignment with the default settings, and checked and edited all alignments by eye (Thompson et al. 1997, Larkin et al. 2007). In a separate analysis we estimated the topology of our 128 taxa tree based solely on rbcL. For this analysis 92 rbcL sequences were taken from Novotný et al. (2010) (as listed in Appendix S1 of that study) whilst the remaining 36 sequences were taken from Whitfield et al. (2012). For this second analysis we used constraints on 35 nodes to reflect family and ordinal level relationships as derived from the current APGIII hypothesis (Angiosperm Phylogeny Group ) as well as calibration points for 14 of these nodes (Angiosperms, Gentianales, Magnoliales, Malpigiales and nine families) (Wikstrom et al. 2001). We estimated time calibrated trees using BEAST ver. 2.3.1 (Bouckaert et al. 2014) using substitution models for each gene as selected using jModel test (Guindon and Gascuel 2003, Darriba et al. 2012). In all cases we employed a log-normal relaxed molecular clock with a starting rate of 5 × 10–4 substitutions per million years for rbcL (Palmer 1991). This rate served as a reasonable prior and aided convergence in our analysis. We used the Yule tree prior with a uniform birth rate. We ran at least two independent MCMC chains of 10 or 20 million generations for each analysis and checked all analyses in Tracer 1.6 (Rambaut et al. ) to ensure adequate sampling and convergence (effective sampling sizes with values over 200 for all parameters sampled). Our final analysis was based on a fixed topology reflecting the results of the initial (multigene) and 128 taxon (rbcL only) analyses, we fixed the topology of the resultant tree to be the same as the first rbcL only tree, apart from the topologies of the subtrees for Ficus, Euphorbiacae and Rubiaceae which were fixed to match the results of the respective multigene analyses. In this last analysis phylogenetic distances within our three large clades were estimated using only rbcL, resulting in our best topological estimate with all substitution rates standardized to one gene. Our tree was broadly very similar to published community phylogenies for this flora (Novotný et al. 2010, Weiblen et al. 2006, Whitfield et al. 2012).
+
+### Study sites
+
+Experiments were conducted in abandoned gardens in Ohu village and Wanang village in Madang Province in Papua New Guinea. Garden were a natural choice as they are usually embedded in the forest matrix and These two locations differ in the type of surrounding forest. Due to high antropopressure Ohu forest consist mainly of a mixture of primary and secondary, and both Piper aduncum and Spathodea campanulata are common invasive species in the area. Wanang village on the other hand is located in the centre of continuous primary forest, with low antropopressure and piper aduncum is still not common.  
+
+We focused on groups of organisms with potentially high impact on early successional stages: oomycete pathogens, insect herbivores and key predators (birds and bats). Pror to the experiment all vegetation within the block was removed. Treatments were: (1) fungicide application; (2) broad spectrum insecticide application; (3) and (4) increased herbivorous insect abundance at two levels; (5) predator removal. All treatments were applied repeatedly fo rone year in one week intervals. 
+
+Field experiment was based on a complete randomised block design and replicated six times in two locations. One block consisted of six experimental plots established in old abandoned gardens of age ranging from 3 to 5 years. 
+
+
+Six 5x5 m plots were established within the block separated by at least 1 m strip and at least 3 m  and five treatments and one control plot of size 5m x 5m were randomly placed within the blocks. 
+
+Six experimental blocks were established in abandoned gardens, each covering an area of at least 400m2, with age ranging from 2 – 5 years. To reset the succession we removed all aboveground vegetation without tillage. All cultivated plants, tree stumps and roots were  removed to prevent resprouting from roots and because big stumps may occupy large areas within the plot. This enured that the seed bank will remain undisturbed  as only burning and intensive land use is known to significantly affect the initial regeneration processes (Guariguata et al. 2001). 
+Six 5 x 5m plots were established within each block. Plots were spaced 1 m apart and 3 m away from the edge of the block. Treatments were then randomly assigned within each block according to the randomized complete block design. To each plot within one block one of the folloeing treatments was applied:
+1. Exclusion of predatory ants, insectivorous birds, and bats. Fishing net (1.5 – 2.0cm mesh size) was secured over the vegetation to prevent predation by birds and bats within the plot. In order to decease the ants predatory pressure we systematically, with monthly intervals, exposed poisonous tuna baits (Permethrin 0.5%) inside the plot. Plot was surounded by a 50 cm high plastic fence, and insect glue (tanglefoot) was be applied on the top edge of the fence to prevent further recolonisation by ants.
+2. Herbivorous insects excluded. We removed all herbivorous insects wiht use of brad spectrum insecticied. To achieve both systemic and nonsystemic protection we applied 2 types of broad spectrum insectide: lambda cychalothrin (1.5 ml/5 l) (commercial name: MUSTANG) and imidacloprid (5ml/5l) (commercial name: THUNDER). Because of intensive vegetation biomass increase insecticide application will occur every week in low concentration according to the manufacturers’ instructions.
+3. Exclusion of pathogenic fungi. To prevent infections by oomycete pathogens, fungicide (commercial name: MANCOZEB, active chemical: mancozeb 12.5 mg / 5L) we applied at weekly intervals according to manufacturers’ instructions. 
+4. Increased herbivory. We used locally common, polyphagus and flightless Oribius sp. weevils to increase herbivory pressure within a plot. Weevils from this genus were previously recognized to feed on xxx plant species in non choice feeding experiment. 25 weevils will be collected, kept in plastic containers, and released into the plot every two weeks to sustain weevil population size. This corresponds to increse in its own abundance of about xxx times. We also conducted additional feeding experiments to test Oribius preferences in the field. They were tested on preferences for each plant species found inside the plot. Insect glue on top edge of fence will prevent weevils from dispersing to other plots.
+5. Hyper-increased herbivory. As above for Treatment 4, but quantity will be 125 Oribius weevils released into this plot.
+6. Control. Plot were sprayed weekly with appropriate amount of water.
+To follow th evegetation change every 2 monts we conducted a vegetation survey where we estimated speceis coverage using Braun-Blanquet scale. After 12 months of undisturbed growth all 72 plots were destructively sampled for plant biomass. During the sampling all insects were collected by covering parts of vegetation with mosquito net, and knocked down with insecticide (MORTEIN). All insects were morphotyped. and aboveground plant biomass was sorted and identified to species level and weighed. In case of  stems with DBH higher than 1cm all the stems were counted and they DBH measured. For woody species we also measured leaf and stem biomass separately. 
+Herbivory damage
+We measured herbivory levels by measuring leaf area consumed by herbivores. We sampled leaves and spread them on leaf frames 50 x 50 cm and photographed. (look fpr methods in previous papers... ). Photographs were processed in ImageJ software ().
+Micorrhiza
+To test if micorrhiza was also affected by our treatment we took five 20 cm deep soil core samples from fungicide treated plot and from the control plot. Soil was rinsed on strainer and all fine roots were collected and preseved in alcohol for further micorrhiza counts.
+Data analysis
+To test for the effect of treatments we used general linear mixed effecet models implemented in the R package, with block taken as a random variable, to controll for the between plot variance. using lmer package () in R (R Development Team 2016). In case of number of species and number of stems we modeled the residuals using Poisson distrubution (glmer). For community composition comparisons we used RDA method implemented in vegan package ().  
+
+## Community descriptors
+
+In successional studies many ways of describing a community were used. Most often encounteres are stem density, biomass and basal area, species richness, species diversity. Below I present statistical tests for each of theses community descriptors and see how they were affected by various treatmants. 
+
+
+
+## Results
+
+The differences in mean biomass were the same in both locations. High level of herbivory significantly decreased the cumulative biomass on the plot (Fig.2).
+Species richness was decreased in OHU on the fungicide treated plots and it was marginally statistically significant, whereas in Wanang significant effect was for high herbivory pressure.
+Diversity measured by Shannon's index increased in Wanang in the plots which were treated with fungicide. No significant effects were observed in Ohu.
+Basal area was also decreased in the plots where herbivory pressure was high. Number of stems on the other hand was strongly affected and deacreased by fungicide, predator exclusion and high herbivory pressure.
+All the plots were different from the controll. There were no significant differences between treatments, meaning that some treatments caused community to change significantly more than the others
+There was a consistent, significant effect of insecticide and fungicide on community composition in both locations. However in Wanang effect of fungicide was marginally significant.
+Ordination diagram based on basal area confirmed only results based on the total weight.
+
+We found relationship between herbivory and SLA, that might be more important for the early successional communities and then vanishes in older ecosystems (there is no relationship between SLA and herbivory (insect abundance) from teh Tim's paper). How about the abundance of insects, this I cannot test, not for Ohu?
+
+Only few species showed consistent responces to the treatments: Mikania mikrantha, Pipturus argenteus; and few showed opposit effects: Trema orientalis, Trichospermum pleiostigma, however these were not well fitted to the data and their partial contribution to the total variace was low, less than 5% of explained variance.
+
+
+## Discussion
+
+In the light of the theory of the pest pressure we would expect that ubiquitous host specific density dependent. It is however difficult to apply these theories to the dynamic early successionary ecosystems. Competitive interactions might be of more importance. Insects are not as strong effect as fungi (in what sense?). While soil community may play an important role in the density dependent dynamics. Ecological memory and psf. Pathogens and insects modify the competitive outcom eof competition. Plants have complex responces to herbivory suggesting that biomass might not be the best measure of herbivory efects. Enemy spillovers. Predators change the behaviour of herbivores. Underappreciated role of spiders (Shmitz). Regime shifts can drive the successional processes. Therfore the resulting effects can differ at different times. This can also modify the the responce of plants on fungal and insect biotic factors.
+
+Mancozeb has a complex effect on the soil microbiota. A at the dosage of 10mg/kg of soil it decreases fungal bacterial and actinomycetes (biomass?). One pronounced effect is inhibition of mineralization after longer use (3 months) << check that fact >> Doneche et al. 1983.
