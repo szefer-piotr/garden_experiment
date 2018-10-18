@@ -13,15 +13,24 @@ library(brms)
 
 # Perform the tests only one example for log(Bio)
 
+## Set some priors 
+priors <- c(set_prior("normal(0, 200)", class = "Intercept"),
+            set_prior("normal(0, 50)", class = "b"),
+            set_prior("normal(0, 100)", class = "sd"),
+            set_prior("normal(0, 100)", class = "sigma"),
+            set_prior("lkj(2)", class = "cor"))
+
 ## Whole community
 l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
-           data=AllTestData, 
+           data=AllTestData,
+           prior = priors,
            control = list(adapt_delta = 0.97),
            file="bioAll")
 
 ## Whole community with random intercept and slope
-l1W_ranef <- brm(log(BIO)~TREAT + (1+TREAT|GARDEN), 
-           data=AllTestData, 
+l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN), 
+           data=AllTestData,
+           prior = priors,
            control = list(adapt_delta = 0.99),
            file="bioAllrenef")
 
