@@ -34,12 +34,18 @@ l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN),
            control = list(adapt_delta = 0.999),
            file="bioAllrenef")
 
+l1W_ranslope <- brm(log(BIO) ~ TREAT + (0+TREAT|GARDEN), 
+                 data=AllTestData,
+                 #prior = priors,
+                 control = list(adapt_delta = 0.999),
+                 file="bioAllrenslope")
+
 # Summaries
 summary(l1W)
 summary(l1W_ranef)
 
 # See if the model with random intercepts is more informative than simple mixed model
-compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic") # it looks like it is!
+compare_ic(waic(l1W_ranef), waic(l1W_ranslope), ic = "waic") # it looks like it is!
 
 # Plots
 stanplot(l1W, type="hist")                    # random intercept
