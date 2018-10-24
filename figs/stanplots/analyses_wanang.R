@@ -1,23 +1,35 @@
-# Specify a path for data and rds files
-setwd("C:\\Users\\Piotr Szefer\\Desktop\\Work\\garden experiment\\figs\\stanplots")
+
 
 # Examples
 # https://www.sciencedirect.com/science/article/pii/S0095447017302310
 
-# Upload data
-AllTestData <- read.table("all_test_data.txt")
-TreeTestDataset <- read.table("tree_test_data.txt")
+
+# load data and packages --------------------------------------------------
+
+# load data
+AllTestData <- read.table("figs/stanplots/all_test_data.txt")
+TreeTestDataset <- read.table("figs/stanplots/tree_test_data.txt")
 
 # Load package 
 library(brms)
+library(ggplot2)
+library(bayesplot)
+library(tidybayes)
+library(dplyr)
 
+
+# plots of the raw data ---------------------------------------------------
+
+ggplot(AllTestData, aes(y = TREAT, x = BIO)) + 
+  geom_point() + 
+  facet_wrap(~GARDEN)
 # Perform the tests only one example for log(Bio)
 
 ## Set some priors 
 priors <- c(set_prior("normal(0, 200)", class = "Intercept"),
             set_prior("normal(0, 50)", class = "b"),
-            set_prior("normal(0, 100)", class = "sd"),
-            set_prior("normal(0, 100)", class = "sigma"),
+            set_prior("normal(0, 5)", class = "sd"),
+            set_prior("normal(0, 5)", class = "sigma"),
             set_prior("lkj(2)", class = "cor"))
 
 ## Whole community
@@ -25,7 +37,7 @@ l1W <- brm(log(BIO)~TREAT + (1|GARDEN),
            data=AllTestData,
            prior = priors,
            control = list(adapt_delta = 0.97),
-           file="bioAll")
+           file="bioAll", ncores = 30)
 
 ## Whole community with random intercept and slope
 l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN), 
@@ -34,9 +46,121 @@ l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN),
            control = list(adapt_delta = 0.99),
            file="bioAllrenef")
 
-# Summaries
-summary(l1W)
-summary(l1W_ranef)
+
+# random intercepts and slopes --------------------------------------------
+
+#define model 
+#does changing contrasts change the model?
+levels(AllTestData$TREAT)
+#contrasts(AllTestData$TREAT) <- contr.helmert(n = 6)
+
+bio_lnorm_bf <- bf(BIO ~ 1 + TREAT + (1 + TREAT|GARDEN), family = lognormal())
+brms::get_prior(bio_lnorm_bf, data = AllTestData)
+## Set some priors 
+priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
+            set_prior("normal(0, 3)", class = "b"),
+            set_prior("normal(0, 4)", class = "sd"),
+            set_prior("normal(0, 3)", class = "sigma"),
+            set_prior("lkj(2)", class = "cor"))
+
+## Whole community with random intercept and slope
+l1W_ranef <- brm(bio_lnorm_bf, 
+                 data=AllTestData,
+                 prior = priors,
+                 control = list(adapt_delta = 0.95),
+                 file="bioAllrenef_lnormal", cores = 4, sample_prior = TRUE)
+
+stancode(l1W_ranef)
+
+#what are the parameters here worth thinking about?
+brms::parnames(l1W_ranef)
+#get the info on divergent iterations
+np <- nuts_params(l1W_ranef)
+# customize appearance of divergences
+color_scheme_set("darkgray")
+div_style <- parcoord_style_np(div_color = "orange", div_size = 1, div_alpha = 1)
+mcmc_parcoord(as.array(l1W_ranef),
+              size = 0.25, alpha = 0.1,
+              regex_pars = "sd_.*",
+              np = np, np_style = div_style)+ coord_flip()
+
+l1W_ranef %>% summary
+
+# recoding factors --------------------------------------------------------
+
+#the model above still has a hard time with divergent iterations. I am curious
+#to try how it works if the variables are coded by hand to develop contrasts
+
+AllTestData_recode <- AllTestData %>% 
+  #remove the weevil stuff just for now
+  filter(!(TREAT %>% str_detect("WEEVIL"))) %>% 
+  # removal treatments as several columns
+  mutate(enemy_removal = if_else(TREAT %in% c("FUNGICIDE", "INSECTICIDE", "PREDATOR"), true = 1, false = 0),
+         is_spray      = if_else(TREAT %in% c("FUNGICIDE", "INSECTICIDE"),             true = 1, false = 0),
+         insecticide   = if_else(TREAT %in% c("INSECTICIDE"),                          true = 1, false = 0))
+
+
+
+bio_lnorm_recode_bf <- bf(BIO ~ 1 + enemy_removal + is_spray + insecticide + (1 + enemy_removal + is_spray + insecticide |GARDEN), family = lognormal())
+brms::get_prior(bio_lnorm_recode_bf, data = AllTestData_recode)
+## Set some priors 
+priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
+            set_prior("normal(0, 3)", class = "b"),
+            set_prior("normal(0, 2)", class = "sd"),
+            set_prior("normal(0, 3)", class = "sigma"),
+            set_prior("lkj(2)", class = "cor"))
+
+## Whole community with random intercept and slope
+bio_recode <- brm(bio_lnorm_recode_bf, 
+                 data=AllTestData_recode,
+                 prior = priors,
+                 control = list(adapt_delta = 0.9),
+                 file="bio_recode", cores = 4, sample_prior = TRUE)
+
+mcmc_parcoord(as.array(bio_recode),
+              size = 0.25, alpha = 0.1,
+              regex_pars = "sd_.*",
+              np = nuts_params(bio_recode), np_style = div_style)+ coord_flip()
+
+# experiment with gamma distribution for biomass instead ------------------
+
+
+#perhaps not necessary, since using lognormal distribution seems to make a big difference.
+
+
+# weevils as a number ------------------------------------------------------
+
+AllTestData_numweevil <- AllTestData %>% 
+  # could use relevel here
+  mutate(removal_trt = if_else(TREAT %in% c("CONTROL", "WEEVIL125", "WEEVIL25"), true = "0_removal", false = as.character(TREAT)),
+         removal_trt = as.factor(removal_trt),
+         weevil = readr::parse_number(TREAT)) %>% 
+  tidyr::replace_na(list(weevil = 0)) %>% 
+  mutate(weevil = weevil / 25)
+
+bio_lnorm_numweev_bf <- bf(BIO ~ 1 + removal_trt + weevil + (1 + removal_trt + weevil|GARDEN), family = lognormal())
+brms::get_prior(bio_lnorm_numweev_bf, data = AllTestData_numweevil)
+## Set some priors 
+priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
+            set_prior("normal(0, 3)", class = "b"),
+            set_prior("normal(0, 4)", class = "sd"),
+            set_prior("normal(0, 3)", class = "sigma"),
+            set_prior("lkj(2)", class = "cor"))
+
+## Whole community with random intercept and slope
+l1W_ranef_numweev <- brm(bio_lnorm_numweev_bf, 
+                 data=AllTestData_numweevil,
+                 prior = priors,
+                 control = list(adapt_delta = 0.95),
+                 file="l1W_ranef_numweev", cores = 4, sample_prior = TRUE)
+
+summary(l1W_ranef_numweev)
+
+marginal_effects(l1W_ranef_numweev)
+
+# ic comparison -----------------------------------------------------------
+
+
 
 # See if the model with random intercepts is more informative than simple mixed model
 compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic") # it looks like it is!
