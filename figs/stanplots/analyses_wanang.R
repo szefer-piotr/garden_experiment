@@ -23,39 +23,44 @@ library(dplyr)
 ggplot(AllTestData, aes(y = TREAT, x = BIO)) + 
   geom_point() + 
   facet_wrap(~GARDEN)
-# Perform the tests only one example for log(Bio)
 
-## Set some priors 
-priors <- c(set_prior("normal(0, 200)", class = "Intercept"),
+
+# setting various priors --------------------------------------------------
+
+priors_raninter <- c(set_prior("normal(0, 200)", class = "Intercept"),
+                     set_prior("normal(0, 50)", class = "b"),
+                     set_prior("normal(0, 5)", class = "sd"),
+                     set_prior("normal(0, 5)", class = "sigma"))
+
+priors_rsi <- c(set_prior("normal(0, 200)", class = "Intercept"),
             set_prior("normal(0, 50)", class = "b"),
             set_prior("normal(0, 5)", class = "sd"),
             set_prior("normal(0, 5)", class = "sigma"),
             set_prior("lkj(2)", class = "cor"))
 
-## Whole community
-l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
-           data=AllTestData,
-           prior = priors,
-           control = list(adapt_delta = 0.97),
-           file="bioAll", ncores = 30)
+priors_raninter2 <- c(set_prior("normal(4, 2)", class = "Intercept"),
+                 set_prior("normal(0, 3)", class = "b"),
+                 set_prior("normal(0, 4)", class = "sd"),
+                 set_prior("normal(0, 3)", class = "sigma"))
 
-## Whole community with random intercept and slope
-l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN), 
-           data=AllTestData,
-           prior = priors,
-           control = list(adapt_delta = 0.99),
-           file="bioAllrenef")
+priors_rsi2 <- c(set_prior("normal(4, 2)", class = "Intercept"),
+            set_prior("normal(0, 3)", class = "b"),
+            set_prior("normal(0, 4)", class = "sd"),
+            set_prior("normal(0, 3)", class = "sigma"),
+            set_prior("lkj(2)", class = "cor"))
 
 
-# random intercepts and slopes --------------------------------------------
+# ANDREW random intercepts and slopes --------------------------------------------
 
 #define model 
 #does changing contrasts change the model?
 levels(AllTestData$TREAT)
+
 #contrasts(AllTestData$TREAT) <- contr.helmert(n = 6)
 
 bio_lnorm_bf <- bf(BIO ~ 1 + TREAT + (1 + TREAT|GARDEN), family = lognormal())
 brms::get_prior(bio_lnorm_bf, data = AllTestData)
+
 ## Set some priors 
 priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
             set_prior("normal(0, 3)", class = "b"),
@@ -64,10 +69,10 @@ priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
             set_prior("lkj(2)", class = "cor"))
 
 ## Whole community with random intercept and slope
-l1W_ranef <- brm(bio_lnorm_bf, 
+l1W_ranef_lnorm <- brm(bio_lnorm_bf, 
                  data=AllTestData,
-                 prior = priors,
-                 control = list(adapt_delta = 0.95),
+                 prior = priors_rsi2,
+                 control = list(adapt_delta = 0.999),
                  file="bioAllrenef_lnormal", cores = 4, sample_prior = TRUE)
 
 stancode(l1W_ranef)
@@ -165,189 +170,112 @@ marginal_effects(l1W_ranef_numweev)
 # See if the model with random intercepts is more informative than simple mixed model
 compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic") # it looks like it is!
 
-# Plots
-stanplot(l1W)                    # random intercept
-stanplot(l1W_ranef, pars="^b_")  # random intercept and slope
-marginal_effects(l1W)      
-marginal_effects(l1W_ranef)      # second model seems to better represent the data
-
-# Creating plots for the predictions
-
-# new data for the model with random intercept
-newdata1 = data.frame(TREAT = levels(AllTestData$TREAT))
-
-fit1 = fitted(
-  l1W,
-  newdata=newdata1,
-  re_formula = NA, # ignore random effects
-  summary = TRUE   # mean and 95% ci
-)
-
-colnames(fit1) = c('fit', 'se','lwr','upr')
-df_plot1 = cbind(newdata1, fit1)
 
 
-# new data for the model with random intercept and slope
-newdata = expand.grid(TREAT= levels(AllTestData$TREAT),
-                      GARDEN = levels(AllTestData$GARDEN))
+# PIOTR -----------------------------------------------------------------------
 
-fit = fitted(
-  l1W_ranef,
-  newdata=newdata,
-  re_formula = NULL, # ignore random effects
-  summary = TRUE   # mean and 95% ci
-)
 
-# fit = fitted(
-#   l1W,
-#   newdata=newdata,
-#   re_formula = NULL, # ignore random effects
-#   summary = TRUE   # mean and 95% ci
-# )
+## specifying models -----------------------------------------------------
 
-colnames(fit) = c('fit', 'se','lwr','upr')
-df_plot = cbind(newdata, fit)
+# !!! Using more informative priors
 
-# Averaging different garden means and CIs for plotting
-df_mean = tapply(df_plot$fit, df_plot$TREAT, mean)
-df_lwr = tapply(df_plot$lwr, df_plot$TREAT, mean)
-df_upr = tapply(df_plot$upr, df_plot$TREAT, mean)
-df_collapsed = cbind(df_mean, df_lwr, df_upr)
-colnames(df_collapsed) = c('fit','lwr','upr')
-df_collapsed <- as.data.frame(df_collapsed)
-df_collapsed$TREAT = rownames(df_collapsed)
+# Random intercept
+l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
+           data=AllTestData,
+           prior = priors_raninter2,
+           control = list(adapt_delta = 0.999),
+           file="bioAll")
 
-ggplot(df_collapsed, aes(x = TREAT, y = fit)) +
-  #geom_violin(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.5, color="gray70", fill='gray95') +
-  geom_jitter(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.3, size=4,
+## Whole community with random intercept and slope
+l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN), 
+                 data=AllTestData,
+                 prior = priors_rsi2,
+                 control = list(adapt_delta = 0.999),
+                 file="bioAllrenef")
+
+# Comparisons
+
+compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic")
+
+# model diagnostics -------------------------------------------------------------
+
+plot(l1W_ranef)
+
+pp = brms::pp_check(l1W_ranef)
+pp + theme_bw()
+
+
+# plots -------------------------------------------------------------------
+
+ranef_plot <- marginal_effects(l1W_ranef)    # second model seems to better represent the data
+
+# Creating plots for the predictions -------------------------------------
+
+# Using predictions from the stanplots they produce the same results as predictions
+ranef_plot$TREAT
+
+## for comparison another plot using predictions of marginal_effect plot
+
+# Plot template
+ggplot(ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
+  geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
+  geom_jitter(data=AllTestData, aes(x=TREAT, y=log(BIO), group=GARDEN), 
+              alpha=0.10, size=4,
               position = position_jitter(width = 0.07)) +
-  geom_errorbar(aes(ymin=lwr, ymax=upr), position=position_dodge(), size=1, width=.5) +
+  geom_line(data=AllTestData, aes(x=TREAT, y=log(BIO), 
+                                  group=GARDEN, 
+                                  linetype = GARDEN), 
+            size = 0.5, alpha=0.25) +
   geom_point(shape=21, size=4, fill='red') +
   xlab("") +
   ylab('log(BIO)') +
   theme_bw () +
   theme(panel.grid = element_blank())
 
-###############################
-# Facet plots for each garden #
-###############################
-
-
-# First for the model with random intercept
-
-# new data for the model with random intercept
-newdata = expand.grid(TREAT= levels(AllTestData$TREAT),
-                      GARDEN = levels(AllTestData$GARDEN))
-
-# fit = fitted(
-#   l1W_ranef,
-#   newdata=newdata,
-#   re_formula = NULL, # ignore random effects
-#   summary = TRUE   # mean and 95% ci
-# )
-
-fit = fitted(
-  l1W,
-  newdata=newdata,
-  re_formula = NULL, # ignore random effects
-  summary = TRUE   # mean and 95% ci
-)
-
-colnames(fit) = c('fit', 'se','lwr','upr')
-df_plot = cbind(newdata, fit)
-
-ggplot(df_plot, aes(x = TREAT, y = fit)) +
-  #geom_violin(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.5, color="gray70", fill='gray95') +
-  geom_jitter(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.3, size=4,
-              position = position_jitter(width = 0.07)) +
-  geom_point(shape=21, size=4, fill='red') +
-  facet_wrap(~GARDEN, scales="free", drop=TRUE)+
-  xlab("") +
-  ylab('log(BIO)') +
-  theme_bw () +
-  theme(panel.grid = element_blank(), 
-        axis.text.x = element_text(angle=90,hjust=1, size=7))
-
-
-# And second for the model with random intercept
-
-# new data for the model with random intercept
-newdata = expand.grid(TREAT= levels(AllTestData$TREAT),
-                      GARDEN = levels(AllTestData$GARDEN))
-
-fit = fitted(
-  l1W_ranef,
-  newdata=newdata,
-  re_formula = NULL, # ignore random effects
-  summary = TRUE   # mean and 95% ci
-)
-
-# fit = fitted(
-#   l1W,
-#   newdata=newdata,
-#   re_formula = NULL, # ignore random effects
-#   summary = TRUE   # mean and 95% ci
-# )
-
-colnames(fit) = c('fit', 'se','lwr','upr')
-df_plot = cbind(newdata, fit)
-
-ggplot(df_plot, aes(x = TREAT, y = fit)) +
-  #geom_violin(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.5, color="gray70", fill='gray95') +
-  geom_jitter(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.3, size=4,
-              position = position_jitter(width = 0.07)) +
-  geom_point(shape=21, size=4, fill='red') +
-  facet_wrap(~GARDEN, scales="free", drop=TRUE)+
-  xlab("") +
-  ylab('log(BIO)') +
-  theme_bw () +
-  theme(panel.grid = element_blank(), 
-        axis.text.x = element_text(angle=90,hjust=1, size=7))
-
-
-#############
-# Contrasts #
-#############
+# Pairwise comparisons -----------------------------------------------------------
 
 # ONE EXAMPLE (out of 45) of a pairwise comparison.
+newdata = expand.grid(TREAT= levels(AllTestData$TREAT))
+
 
 # Sampling differences, posterior for the differences between C and I
 fit1 = as.data.frame(fitted(l1W_ranef,
                             newdata=newdata,
-                            re_formula = NULL, # include all effects?
+                            re_formula = NA, # include all effects?
                             summary = FALSE #extract the full MCMC
 ))
-colnames(fit1) <- newdata$TREAT
 
-# Regardless of the random effects of the block and not allowing for different responces to 
-# treatments in different blocks.
-#fit1 = as.data.frame(fitted(l1W_ranef,
-#                            newdata=newdata,
-#                            re_formula = NULL, # include all effects?
-#                            summary = FALSE #extract the full MCMC
-#))
-#colnames(fit1) <- newdata$TREAT
+colnames(fit1) <- newdata$TREAT
 
 # Is CONTROL different from PREDATOR regardless of the block?
 covspre <- fit1[ ,colnames(fit1) == "CONTROL"] - fit1[ ,colnames(fit1) == "PREDATOR"]
 
+sph <- stanplot(l1W_ranef, type = "hist", pars="^b_")
+
+unique(sph$data$Parameter)
+hist(sph$data$value[sph$data$Parameter == "b_TREATPREDATOR"], breaks = 50)
+
+vs <- sph$data$value[sph$data$Parameter == "b_TREATPREDATOR"]
+
+sum(vs<0)/length(vs)
+
 # Histogram for the differences
-hist(apply(covspre, 1, mean), breaks = 50,
+hist(covspre, breaks = 50,
      main = "Posterior: CONTROL and PREDATOR tratments",
      xlab="Difference")
 
 # Probability of observing difference between Control and Predator above zero
 # from different gardens
-sum(covspre>0)/(6*4000) # 86.6 % probablity that it is so
+sum(covspre>0)/(4000) # 86.6 % probablity that it is so
+abline(v = quantile(as.vector(stack(covspre))$values, 0.25))
+
+quantile(as.vector(stack(covspre))$values, c(1-0.866, 0.5, 0.866))
+
+head(as.vector(stack(covspre)))
 
 
-## NOTES ##
-    ###
-    ###
-  #######
-   #####
-    ###
-     #
+
+# rest of the models -------------------------------------
 
 l2W <- brm(SW ~ TREAT,
                  data=AllTestData,
