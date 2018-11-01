@@ -234,40 +234,39 @@ ggplot(ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
 
 # Pairwise comparisons -----------------------------------------------------------
 
-# ONE EXAMPLE (out of 45) of a pairwise comparison.
-newdata = expand.grid(TREAT= levels(AllTestData$TREAT))
-
-
-# Sampling differences, posterior for the differences between C and I
-fit1 = as.data.frame(fitted(l1W_ranef,
-                            newdata=newdata,
-                            re_formula = NA, # include all effects?
-                            summary = FALSE #extract the full MCMC
-))
-
-colnames(fit1) <- newdata$TREAT
-
-# Is CONTROL different from PREDATOR regardless of the block?
-covspre <- fit1[ ,colnames(fit1) == "CONTROL"] - fit1[ ,colnames(fit1) == "PREDATOR"]
-
 sph <- stanplot(l1W_ranef, type = "hist", pars="^b_")
 
-unique(sph$data$Parameter)
-hist(sph$data$value[sph$data$Parameter == "b_TREATPREDATOR"], breaks = 50)
+par(mfrow = c(3,2))
 
-vs <- sph$data$value[sph$data$Parameter == "b_TREATPREDATOR"]
+# Change the name of this
+sph$data$Parameter
 
-sum(vs<0)/length(vs)
+for(type in unique(sph$data$Parameter)){
+  
+  vs <- sph$data$value[sph$data$Parameter == type]
+  
+  colour = "lightblue"
+  
+  if (mean(vs<0) > 0.90) colour = "orange"
+  if (mean(vs<0) > 0.95) colour = "red"
+  
+  hist(vs, breaks = 50,
+       main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
+       xlab="Difference", col = colour)
+  
+  abline(v = 0, lty=2)
+  
+}
+
+stanplot(l1W_ranef, type = "hist",  pars="^b_")
 
 # Histogram for the differences
-hist(covspre, breaks = 50,
-     main = "Posterior: CONTROL and PREDATOR tratments",
-     xlab="Difference")
 
-# Probability of observing difference between Control and Predator above zero
-# from different gardens
-sum(covspre>0)/(4000) # 86.6 % probablity that it is so
-abline(v = quantile(as.vector(stack(covspre))$values, 0.25))
+hist(vs, breaks = 50,
+     main = "Posterior: CONTROL and PREDATOR tratments",
+     xlab="Difference", col = "lightblue")
+
+abline(v = 0, lty=2)
 
 quantile(as.vector(stack(covspre))$values, c(1-0.866, 0.5, 0.866))
 
@@ -277,6 +276,7 @@ head(as.vector(stack(covspre)))
 
 # rest of the models -------------------------------------
 
+# How to get better 
 l2W <- brm(SW ~ TREAT,
                  data=AllTestData,
                  control = list(adapt_delta = 0.999),
