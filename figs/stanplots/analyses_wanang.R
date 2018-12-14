@@ -8,6 +8,16 @@
 
 # load data
 AllTestData <- read.table("figs/stanplots/all_test_data.txt")
+
+AllTestData$TREAT = factor(AllTestData$TREAT,
+                           levels = c("CONTROL", 
+                                      "FUNGICIDE",
+                                      "INSECTICIDE", 
+                                      "PREDATOR",
+                                      "WEEVIL25", 
+                                      "WEEVIL125"))
+
+
 TreeTestDataset <- read.table("figs/stanplots/tree_test_data.txt")
 
 # Load package 
@@ -16,7 +26,7 @@ library(ggplot2)
 library(bayesplot)
 library(tidybayes)
 library(dplyr)
-
+library(ggforce)
 
 # plots of the raw data ---------------------------------------------------
 
@@ -90,11 +100,13 @@ mcmc_parcoord(as.array(l1W_ranef),
               np = np, np_style = div_style)+ coord_flip()
 
 l1W_ranef %>% summary
+marginal_effects(l1W_ranef_lnorm)
 
 # recoding factors --------------------------------------------------------
 
 #the model above still has a hard time with divergent iterations. I am curious
 #to try how it works if the variables are coded by hand to develop contrasts
+library(stringr)
 
 AllTestData_recode <- AllTestData %>% 
   #remove the weevil stuff just for now
@@ -175,7 +187,7 @@ compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic") # it looks like it is!
 # PIOTR -----------------------------------------------------------------------
 
 
-## Biomass -----------------------------------------------------
+## 1. Biomass -----------------------------------------------------
 
 # !!! Using more informative priors
 
@@ -197,48 +209,49 @@ l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN),
 
 compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic")
 
-# model diagnostics -------------------------------------------------------------
+# model diagnostics
 
 pp = brms::pp_check(l1W_ranef)
 pp + theme_bw()
 
 
-# plots -------------------------------------------------------------------
+# plots
+library(ggridges)
 
-ranef_plot <- marginal_effects(l1W_ranef)    # second model seems to better represent the data
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l1W_ranef, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=TREAT)) + 
+  geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1) +
+  geom_density_ridges(alpha = 0.5)
 
-# Creating plots for the predictions -------------------------------------
+colour = as.character(AllTestData$TREAT)
+colour[colour == "CONTROL"] <- "grey50"
+colour[colour == "FUNGICIDE"] <- "grey50"
+colour[colour == "INSECTICIDE"] <- "grey50"
+colour[colour == "PREDATOR"] <- "orange"
+colour[colour == "WEEVIL25"] <- "grey50"
+colour[colour == "WEEVIL125"] <- "red"
 
-# Using predictions from the stanplots they produce the same results as predictions
-ranef_plot$TREAT
+AllTestData$colour = colour
 
-## for comparison another plot using predictions of marginal_effect plot
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l1W_ranef, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
 
-# Plot template
-ggplot(ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
-  geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
-  geom_jitter(data=AllTestData, aes(x=TREAT, y=log(BIO), group=GARDEN), 
-              alpha=0.10, size=4,
-              position = position_jitter(width = 0.07)) +
-  geom_line(data=AllTestData, aes(x=TREAT, y=log(BIO), 
-                                  group=GARDEN, 
-                                  linetype = GARDEN), 
-            size = 0.5, alpha=0.25) +
-  geom_point(shape=21, size=4, fill='red') +
-  xlab("") +
-  ylab('log(BIO)') +
-  theme_bw () +
-  theme(panel.grid = element_blank())
 
-# Pairwise comparisons -----------------------------------------------------------
+# Pairwise comparisons
 
+# Included in the suplementary and determining "significance"
 sph <- stanplot(l1W_ranef, type = "hist", pars="^b_")
-
 par(mfrow = c(3,2))
 
 # Change the name of this
 sph$data$Parameter
-
 for(type in unique(sph$data$Parameter)){
   
   vs <- sph$data$value[sph$data$Parameter == type]
@@ -258,21 +271,69 @@ for(type in unique(sph$data$Parameter)){
 
 stanplot(l1W_ranef, type = "hist",  pars="^b_")
 
+# https://cran.r-project.org/web/packages/tidybayes/vignettes/tidy-brms.html
+
+garden_panel_plot <- function(x) x %>%
+  ggplot(aes(x = TREAT, y = log(BIO))) +
+  geom_point(aes(y = .prediction), alpha = 0.1, position = position_jitter(width = 0.1)) +
+  geom_point(colour = "red", size = 3) +
+  facet_wrap(~GARDEN) +
+  coord_flip() +
+  theme_minimal()
+
+
+# predictions for the AVERAGE block
+AllTestData %>%
+  tidybayes::add_predicted_draws(l1W_ranef, n = 200, re_formula = NULL) %>%
+  garden_panel_plot
+
+# predictions for the AVERAGE block
+new_plot_data <- AllTestData %>%
+  modelr::data_grid(TREAT, GARDEN = "PS1") %>%
+  tidybayes::add_predicted_draws(l1W_ranef, n = 200, re_formula = NA)
+
+
+AllTestData %>%
+  ggplot(aes(x = TREAT, y = log(BIO))) +
+  geom_point(aes(y = .prediction), alpha = 0.1, position = position_jitter(width = 0.1),
+             new_plot_data) +
+  geom_point(colour = "green", size = 3) +
+  facet_wrap(~GARDEN) +
+  coord_flip() +
+  theme_minimal()
+
+
 # Histogram for the differences
 
-# Rest of the models --------------------------------------------------------
+# 1b. Biomass - random species --------------------------------------------
 
-# SHANNON ------------------------------------------------------------------
+inddat <- read.table("datasets/inddataWanang.txt")
+inddat$LIFE.FORM <-as.character(inddat$LIFE.FORM)
+
+indtree <- inddat[inddat$LIFE.FORM %in% c("shrub","tree"), ]
+
+# https://rpsychologist.com/r-guide-longitudinal-lme-lmer
+# Specify the equation
+
+bio_lnorm_ind <- bf(WEIGHT ~ 1 + TREAT + (1 + SP_CODE + TREAT|BLOCK), family = lognormal())
+
+bio_rand_ind <- brm(bio_lnorm_ind,
+                    data=indtree,
+                    control = list(adapt_delta = .8))
+
+
+
+# 2. SHANNON ------------------------------------------------------------------
 
 sw_norm_f <- bf(SW ~ 1 + TREAT + (1 + TREAT|GARDEN), family = gaussian())
-sw_prior <- get_prior(sw_norm_f, data = AllTestData)
-sw_prior$prior[1] <- "normal(1.25,4)"
 
-# priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
-#             set_prior("normal(0, 3)", class = "b"),
-#             set_prior("normal(0, 4)", class = "sd"),
-#             set_prior("normal(0, 3)", class = "sigma"),
-#             set_prior("lkj(2)", class = "cor"))
+mean(AllTestData$SW)
+
+sw_prior <- c(set_prior("normal(0, 3)", class = "Intercept"),
+            set_prior("normal(0, 3)", class = "b"),
+            set_prior("normal(0, 4)", class = "sd"),
+            set_prior("normal(0, 3)", class = "sigma"),
+            set_prior("lkj(2)", class = "cor"))
 
 # How to get better 
 l2W_ranef <- brm(SW ~ TREAT + (1+TREAT|GARDEN),
@@ -287,24 +348,45 @@ l2W_ranef <- brm(SW ~ TREAT + (1+TREAT|GARDEN),
 pp = brms::pp_check(l2W_ranef)
 pp + theme_bw()
 
-sw_ranef_plot <- marginal_effects(l2W_ranef)    # second model seems to better represent the data
-
 ## for comparison another plot using predictions of marginal_effect plot
 # Plot template
-ggplot(sw_ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
-  geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
-  geom_jitter(data=AllTestData, aes(x=TREAT, y=SW, group=GARDEN), 
-              alpha=0.10, size=4,
-              position = position_jitter(width = 0.07)) +
-  geom_line(data=AllTestData, aes(x=TREAT, y=SW, 
-                                  group=GARDEN, 
-                                  linetype = GARDEN), 
-            size = 0.5, alpha=0.25) +
-  geom_point(shape=21, size=4, fill='red') +
-  xlab("") +
-  ylab("Shannon's Index") +
-  theme_bw () +
-  theme(panel.grid = element_blank())
+
+colour = as.character(AllTestData$TREAT)
+colour[colour == "CONTROL"] <- "grey50"
+colour[colour == "FUNGICIDE"] <- "grey50"
+colour[colour == "INSECTICIDE"] <- "red"
+colour[colour == "PREDATOR"] <- "grey50"
+colour[colour == "WEEVIL25"] <- "orange"
+colour[colour == "WEEVIL125"] <- "grey50"
+
+AllTestData$colour = colour
+
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l2W_ranef, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = SW, y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+  
+
+# sw_ranef_plot <- marginal_effects(l2W_ranef)    # second model seems to better represent the data
+
+# ggplot(sw_ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
+#   geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
+#   geom_jitter(data=AllTestData, aes(x=TREAT, y=SW, group=GARDEN), 
+#               alpha=0.10, size=4,
+#               position = position_jitter(width = 0.07)) +
+#   geom_line(data=AllTestData, aes(x=TREAT, y=SW, 
+#                                   group=GARDEN, 
+#                                   linetype = GARDEN), 
+#             size = 0.5, alpha=0.25) +
+#   geom_point(shape=21, size=4, fill='red') +
+#   xlab("") +
+#   ylab("Shannon's Index") +
+#   theme_bw () +
+#   theme(panel.grid = element_blank())
 
 # Pairwise comparisons
 
@@ -334,17 +416,150 @@ for(type in unique(sph$data$Parameter)){
 
 #stanplot(l2W_ranef, type = "hist",  pars="^b_")
 
-# SPECIES number ------------------------------------------------------------------- 
+# 3. SPECIES number ------------------------------------------------------------------- 
 
-sp_pois_f <- bf(SPEC_NO ~ 1 + TREAT + (1 + TREAT|GARDEN), family = poisson())
-sp_prior <- get_prior(sp_pois_f, data = AllTestData)
-#sp_prior$prior[1] <- "poisson()"
+sp_pois_f <- bf(SPEC_NO ~ 1 + TREAT + (1 + TREAT|GARDEN), family = "negbinomial")
 
+# Set some priors
+
+# <<<<< I DONT KNOW HOW TO SPECIFY THEM!!! >>>>
+
+# sp_no_priors <- c(
+#   set_prior("poisson(15)", class = "b"),
+#   set_prior("lkj(1)", class = "cor"),
+#   set_prior("poisson(15)", class = "Intercept"),
+#   set_prior("normal(0,1)", class = "sd")
+# )
+
+# Prior predictive check!
+# sample from the prior distribution
+l3W_ranef_prior <- brm(sp_pois_f, data=AllTestData,
+           family = "negbinomial",
+           control = list(adapt_delta = 0.8),
+           prior = sp_no_priors, sample_prior = "only")
+
+l3W_ranef_no_prior <- brm(sp_pois_f, data=AllTestData,
+                       family = "negbinomial",
+                       control = list(adapt_delta = 0.8),
+                       file = "l3W_ranef_no_prior")
+
+
+l3W_ranef_no_prior %>% summary
+
+
+####  3b. Plot ----------------------------------------------------
+
+pp = brms::pp_check(l3W_ranef_no_prior)
+pp + theme_bw()
+
+## for comparison another plot using predictions of marginal_effect plot
+
+
+# Pairwise comparisons
+
+sph <- stanplot(l3W_ranef_no_prior, type = "hist", pars="^b_")
+
+par(mfrow = c(3,2))
+
+# Change the name of this
+sph$data$Parameter
+
+for(type in unique(sph$data$Parameter)){
+  
+  vs <- sph$data$value[sph$data$Parameter == type]
+  
+  colour = "lightblue"
+  
+  if (mean(vs<0) > 0.90) colour = "orange"
+  if (mean(vs<0) > 0.95) colour = "red"
+  
+  hist(vs, breaks = 50,
+       main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
+       xlab="Difference", col = colour)
+  
+  abline(v = 0, lty=2)
+  
+}
+
+
+
+# Plot template
+
+colour = as.character(AllTestData$TREAT)
+colour[colour == "CONTROL"] <- "grey50"
+colour[colour == "FUNGICIDE"] <- "grey50"
+colour[colour == "INSECTICIDE"] <- "grey50"
+colour[colour == "PREDATOR"] <- "grey50"
+colour[colour == "WEEVIL25"] <- "grey50"
+colour[colour == "WEEVIL125"] <- "grey50"
+
+AllTestData$colour = colour
+
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l3W_ranef_no_prior, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = SPEC_NO, y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+
+
+
+sph <- stanplot(l3W_ranef_prior, type = "hist", pars="^b_")
+par(mfrow = c(3,2))
+
+# Change the name of this
+sph$data$Parameter
+for(type in unique(sph$data$Parameter)){
+  
+  vs <- sph$data$value[sph$data$Parameter == type]
+  
+  colour = "lightblue"
+  
+  if (mean(vs<0) > 0.90) colour = "orange"
+  if (mean(vs<0) > 0.95) colour = "red"
+  
+  hist(vs, breaks = 50,
+       main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
+       xlab="Difference", col = colour)
+  
+  abline(v = 0, lty=2)
+  
+}
+
+
+# visualize the prior predictive distribution:
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l3W_ranef_no_prior) %>% #glimpse %>% 
+  filter(.draw ==3) %>% 
+  ggplot(aes(x = TREAT, y = .prediction)) + geom_point()
+
+# sample from the prior distribution
 l3W_ranef <- brm(sp_pois_f, data=AllTestData,
-           family = poisson(),
-           control = list(adapt_delta = 0.999),
-           prior = sp_prior,
-           file = "spAllranef")
+                       family = poisson(),
+                       control = list(adapt_delta = 0.8),
+                       prior = sp_no_priors, sample_prior = "yes")
+
+
+# 1. Visualize fluffy plots
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l3W_ranef_no_prior, n = 500) %>% glimpse %>% 
+  ggplot(aes(x = TREAT, y = SPEC_NO)) + 
+  geom_point(aes(y = .prediction), alpha = 0.1, position = position_jitter(width = 0.1)) + 
+  geom_point(colour = "green", size = 3) + 
+  facet_wrap(~GARDEN) + 
+  coord_flip() + 
+  theme_minimal()
+
+pp_check(l3W_ranef, fun = "stat_grouped")
+pp_check
+
+stanplot(l3W_ranef, type = "dens")
+
+launch_shinystan(l3W_ranef)
+
+# 2. Change the family
 
 
 # plot(l3W_ranef)
@@ -402,41 +617,48 @@ for(type in unique(sph$data$Parameter)){
 stanplot(l3W_ranef, type = "hist",  pars="^b_")
 
 
-# Evenness -------------------------------------------------------------------
+# 4. Evenness -------------------------------------------------------------------
 
 ev_norm_f <- bf(EVEN ~ 1 + TREAT + (1 + TREAT|GARDEN), family = Beta())
-ev_prior <- get_prior(ev_norm_f, data = AllTestData)
+
+# ??? 
+#ev_prior <- c()
 
 l4W_ranef <- brm(ev_norm_f, data=AllTestData,
-           family = Beta(),
-           control = list(adapt_delta = 0.999),
-           prior = ev_prior,
-           file="eveAll")
+           family = "Beta",
+           control = list(adapt_delta = 0.8), file = "l4W_ranef")
+
+
+# 4b. Plots --------------------
 
 pp = brms::pp_check(l4W_ranef)
 pp + theme_bw()
 
-ev_ranef_plot <- marginal_effects(l4W_ranef)
+
+colour = as.character(AllTestData$TREAT)
+colour[colour == "CONTROL"] <- "grey50"
+colour[colour == "FUNGICIDE"] <- "grey50"
+colour[colour == "INSECTICIDE"] <- "orange"
+colour[colour == "PREDATOR"] <- "grey50"
+colour[colour == "WEEVIL25"] <- "orange"
+colour[colour == "WEEVIL125"] <- "grey50"
+
+AllTestData$colour = colour
+
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l4W_ranef, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = EVEN, y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+
+
 
 # Using predictions from the stanplots they produce the same results as predictions
 
 ## for comparison another plot using predictions of marginal_effect plot
-
-# Plot template
-ggplot(ev_ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
-  geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
-  geom_jitter(data=AllTestData, aes(x=TREAT, y=EVEN, group=GARDEN), 
-              alpha=0.10, size=4,
-              position = position_jitter(width = 0.07)) +
-  geom_line(data=AllTestData, aes(x=TREAT, y=EVEN, 
-                                  group=GARDEN, 
-                                  linetype = GARDEN), 
-            size = 0.5, alpha=0.25) +
-  geom_point(shape=21, size=4, fill='red') +
-  xlab("") +
-  ylab("Shannon's Index") +
-  theme_bw () +
-  theme(panel.grid = element_blank())
 
 # Pairwise comparisons
 
@@ -465,12 +687,47 @@ for(type in unique(sph$data$Parameter)){
 
 
  
-# Tree Dataset ---------------------------------------------------------------
 
-# l1Wt <- brm(logBio~TREATMENT+(1|GARDEN), data=TreeTestDataset,
-#            control = list(adapt_delta = 0.99),
-#            file="bioTre")
-# 
+# Tree Biomass ---------------------------------------------------------------
+
+# Specify priors
+bio_norm_tree <- bf(logBio ~ 1 + TREATMENT + (1 + TREATMENT|GARDEN), family = gaussian())
+bio_tree_prior <- get_prior(bio_norm_tree, data = TreeTestDataset)
+
+# Model
+l1Wt <- brm(bio_norm_tree, 
+            data=TreeTestDataset,
+            control = list(adapt_delta = 0.99),
+            prior = bio_tree_prior,
+            file="bioTre")
+
+
+bio_ranef_tree <- marginal_effects(l1Wt)
+
+## for comparison another plot using predictions of marginal_effect plot
+# Plot template
+
+p <- ggplot(bio_ranef_tree$TREAT, aes(x = TREATMENT, y = estimate__)) +
+  geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
+  geom_jitter(data=TreeTestDataset, aes(x=TREATMENT, y=logBio, group=GARDEN), 
+              alpha=0.10, size=4,
+              position = position_jitter(width = 0.07)) +
+  geom_line(data=TreeTestDataset, aes(x=TREATMENT, y=logBio, 
+                                  group=GARDEN, 
+                                  linetype = GARDEN), 
+            size = 0.5, alpha=0.25) +
+  geom_point(shape=21, size=4, fill='red') +
+  xlab("") +
+  ylab("LN(BIOMASS)") +
+  theme_bw () +
+  theme(panel.grid = element_blank())
+
+p
+
+# plotMyResults(l1Wt)
+
+# Tree Diversity --------------------------------------------------------------
+
 # l2Wt <- brm(DivTree~TREATMENT + (1|GARDEN), data=TreeTestDataset,
 #             control = list(adapt_delta = 0.99),
 #             file="swiTre")
@@ -489,3 +746,59 @@ for(type in unique(sph$data$Parameter)){
 #             family=poisson(),
 #             control = list(adapt_delta = 0.9999),
 #             file="steTre")
+
+
+
+
+
+#### Under construction!
+plotMyResults <- function(l2W_ranef){
+  
+  pp = brms::pp_check(l2W_ranef)
+  pp + theme_bw()
+  
+  sw_ranef_plot <- marginal_effects(l2W_ranef)    # second model seems to better represent the data
+  
+  ## for comparison another plot using predictions of marginal_effect plot
+  # Plot template
+  
+  p <- ggplot(sw_ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
+    geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
+    geom_jitter(data=AllTestData, aes(x=TREAT, y=SW, group=GARDEN), 
+                alpha=0.10, size=4,
+                position = position_jitter(width = 0.07)) +
+    geom_line(data=AllTestData, aes(x=TREAT, y=SW, 
+                                    group=GARDEN, 
+                                    linetype = GARDEN), 
+              size = 0.5, alpha=0.25) +
+    geom_point(shape=21, size=4, fill='red') +
+    xlab("") +
+    ylab("Shannon's Index") +
+    theme_bw () +
+    theme(panel.grid = element_blank())
+  
+  # Pairwise comparisons
+  sph <- stanplot(l2W_ranef, type = "hist", pars="^b_")
+  
+  par(mfrow = c(3,2))
+  
+  for(type in unique(sph$data$Parameter)){
+    
+    vs <- sph$data$value[sph$data$Parameter == type]
+    
+    colour = "lightblue"
+    
+    if (mean(vs<0) > 0.90) colour = "orange"
+    if (mean(vs<0) > 0.95) colour = "red"
+    
+    hist(vs, breaks = 50,
+         main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
+         xlab="Difference", col = colour)
+    
+    abline(v = 0, lty=2)
+    
+  }
+  
+  p
+  
+}
