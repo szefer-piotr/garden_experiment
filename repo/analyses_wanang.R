@@ -1,12 +1,9 @@
-# Specify a path for data and rds files
-setwd("C:\\Users\\Piotr Szefer\\Desktop\\Work\\garden experiment\\figs\\stanplots")
-
 # Examples
 # https://www.sciencedirect.com/science/article/pii/S0095447017302310
 
 # Upload data
-AllTestData <- read.table("all_test_data.txt")
-TreeTestDataset <- read.table("tree_test_data.txt")
+AllTestData <- read.table("repo/all_test_data.txt")
+TreeTestDataset <- read.table("repo/tree_test_data.txt")
 
 # Load package 
 library(brms)
@@ -16,8 +13,7 @@ library(brms)
 ## Whole community
 l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
            data=AllTestData, 
-           control = list(adapt_delta = 0.97),
-           file="bioAll")
+           control = list(adapt_delta = 0.8))
 
 ## Whole community with random intercept and slope
 l1W_ranef <- brm(log(BIO)~TREAT + (1+TREAT|GARDEN), 
