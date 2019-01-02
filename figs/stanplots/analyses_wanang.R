@@ -1,5 +1,3 @@
-
-
 # Examples
 # https://www.sciencedirect.com/science/article/pii/S0095447017302310
 
@@ -82,8 +80,8 @@ priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
 l1W_ranef_lnorm <- brm(bio_lnorm_bf, 
                  data=AllTestData,
                  prior = priors_rsi2,
-                 control = list(adapt_delta = 0.999),
-                 file="bioAllrenef_lnormal", cores = 4, sample_prior = TRUE)
+                 control = list(adapt_delta = 0.8),
+                 cores = 4, sample_prior = TRUE)
 
 stancode(l1W_ranef)
 

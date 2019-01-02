@@ -1,0 +1,12 @@
+# We do not want to keep the processed file
+.plmt/processed.md
+revised.md
+
+# Pandoc filters
+pandoc-*
+
+# We want to commit the pdf, but not the odt (we don't want the diff files either)
+output/*.odt
+output/diff*.pdf
+# output/*.pdf
+# Just remove the comment of the line above to also ignore the pdf
