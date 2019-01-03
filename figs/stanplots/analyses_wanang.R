@@ -15,16 +15,20 @@ AllTestData$TREAT = factor(AllTestData$TREAT,
                                       "WEEVIL25", 
                                       "WEEVIL125"))
 
-
 TreeTestDataset <- read.table("figs/stanplots/tree_test_data.txt")
 
-# Load package 
+# Individual based biomass and trait data
+inddat <- read.table("datasets/inddataWanang.txt")
+inddat$LIFE.FORM <-as.character(inddat$LIFE.FORM)
+indtree <- inddat[inddat$LIFE.FORM %in% c("shrub","tree"), ]
+
+
+# Load packages
 library(brms)
 library(ggplot2)
 library(bayesplot)
 library(tidybayes)
 library(dplyr)
-library(ggforce)
 
 # plots of the raw data ---------------------------------------------------
 
@@ -187,28 +191,31 @@ compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic") # it looks like it is!
 
 ## 1. Biomass -----------------------------------------------------
 
-# !!! Using more informative priors
+# [SUGESTION] Use more informative priors!
 
 # Random intercept
-l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
-           data=AllTestData,
-           prior = priors_raninter2,
-           control = list(adapt_delta = 0.999),
-           file="bioAll")
+# l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
+#            data=AllTestData,
+#            prior = priors_raninter2,
+#            control = list(adapt_delta = 0.999))
+
+# Specify priors for the random intercept and random slope model
+priors_rsi2 <- c(set_prior("normal(4, 2)", class = "Intercept"),
+                 set_prior("normal(0, 3)", class = "b"),
+                 set_prior("normal(0, 4)", class = "sd"),
+                 set_prior("normal(0, 3)", class = "sigma"),
+                 set_prior("lkj(2)", class = "cor"))
 
 ## Whole community with random intercept and slope
 l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN), 
                  data=AllTestData,
                  prior = priors_rsi2,
-                 control = list(adapt_delta = 0.999),
-                 file="bioAllrenef")
+                 control = list(adapt_delta = 0.999))
 
-# Comparisons
+# Comparisons with model without random slope.
+# compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic")
 
-compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic")
-
-# model diagnostics
-
+# Model diagnostics
 pp = brms::pp_check(l1W_ranef)
 pp + theme_bw()
 
@@ -216,40 +223,26 @@ pp + theme_bw()
 # plots
 library(ggridges)
 
-AllTestData %>% 
-  tidybayes::add_predicted_draws(l1W_ranef, n = 1000) %>%
-  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=TREAT)) + 
-  geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1) +
-  geom_density_ridges(alpha = 0.5)
-
-colour = as.character(AllTestData$TREAT)
-colour[colour == "CONTROL"] <- "grey50"
-colour[colour == "FUNGICIDE"] <- "grey50"
-colour[colour == "INSECTICIDE"] <- "grey50"
-colour[colour == "PREDATOR"] <- "orange"
-colour[colour == "WEEVIL25"] <- "grey50"
-colour[colour == "WEEVIL125"] <- "red"
-
-AllTestData$colour = colour
-
-AllTestData %>% 
-  tidybayes::add_predicted_draws(l1W_ranef, n = 1000) %>%
-  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
-  geom_density_ridges(alpha = 0.5) + 
-  scale_fill_manual(values = c("grey", "orange", "red")) +
-  geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1,
-             color = "grey50") + 
-  theme_bw()
-
+# Old plot
+# AllTestData %>% 
+#   tidybayes::add_predicted_draws(l1W_ranef, n = 1000) %>%
+#   ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=TREAT)) + 
+#   geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1) +
+#   geom_density_ridges(alpha = 0.5)
 
 # Pairwise comparisons
 
 # Included in the suplementary and determining "significance"
 sph <- stanplot(l1W_ranef, type = "hist", pars="^b_")
-par(mfrow = c(3,2))
+
 
 # Change the name of this
 sph$data$Parameter
+
+png("figs/bio_all_diff.png")
+
+par(mfrow = c(3,2))
+
 for(type in unique(sph$data$Parameter)){
   
   vs <- sph$data$value[sph$data$Parameter == type]
@@ -267,7 +260,43 @@ for(type in unique(sph$data$Parameter)){
   
 }
 
-stanplot(l1W_ranef, type = "hist",  pars="^b_")
+dev.off()
+
+# Colours based on posterior distributions of differences between
+# control and a treatment
+colour = as.character(AllTestData$TREAT)
+colour[colour == "CONTROL"] <- "grey50"
+colour[colour == "FUNGICIDE"] <- "grey50"
+colour[colour == "INSECTICIDE"] <- "grey50"
+colour[colour == "PREDATOR"] <- "orange"
+colour[colour == "WEEVIL25"] <- "grey50"
+colour[colour == "WEEVIL125"] <- "red"
+
+AllTestData$colour = colour
+
+png("figs/bio_bayes_hist.png")
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l1W_ranef, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+dev.off()
+
+#### Hold the plot
+BD <- AllTestData %>% 
+  tidybayes::add_predicted_draws(l1W_ranef, n = 1000)
+
+BDp <- ggplot(BD,  aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+####
+
 
 # https://cran.r-project.org/web/packages/tidybayes/vignettes/tidy-brms.html
 
@@ -279,48 +308,28 @@ garden_panel_plot <- function(x) x %>%
   coord_flip() +
   theme_minimal()
 
-
-# predictions for the AVERAGE block
-AllTestData %>%
-  tidybayes::add_predicted_draws(l1W_ranef, n = 200, re_formula = NULL) %>%
-  garden_panel_plot
-
-# predictions for the AVERAGE block
-new_plot_data <- AllTestData %>%
-  modelr::data_grid(TREAT, GARDEN = "PS1") %>%
-  tidybayes::add_predicted_draws(l1W_ranef, n = 200, re_formula = NA)
+# predictions for the AVERAGE block (supplementary?)
+# AllTestData %>%
+#   tidybayes::add_predicted_draws(l1W_ranef, n = 200, re_formula = NULL) %>%
+#   garden_panel_plot
 
 
-AllTestData %>%
-  ggplot(aes(x = TREAT, y = log(BIO))) +
-  geom_point(aes(y = .prediction), alpha = 0.1, position = position_jitter(width = 0.1),
-             new_plot_data) +
-  geom_point(colour = "green", size = 3) +
-  facet_wrap(~GARDEN) +
-  coord_flip() +
-  theme_minimal()
-
-
-# Histogram for the differences
 
 # 1b. Biomass - random species --------------------------------------------
 
-inddat <- read.table("datasets/inddataWanang.txt")
-inddat$LIFE.FORM <-as.character(inddat$LIFE.FORM)
-
-indtree <- inddat[inddat$LIFE.FORM %in% c("shrub","tree"), ]
-
 # https://rpsychologist.com/r-guide-longitudinal-lme-lmer
-# Specify the equation
 
-bio_lnorm_ind <- bf(WEIGHT ~ 1 + TREAT + (1 + SP_CODE + TREAT|BLOCK), family = lognormal())
+
+# Specify the equation
+# UNDER CONSTRUCTION - DON'T EVEN KNOW IF THIS IS OK
+
+bio_lnorm_ind <- bf(WEIGHT ~ 1 + TREAT + (1 + TREAT|BLOCK) + (1|SP_CODE), family = lognormal())
 
 bio_rand_ind <- brm(bio_lnorm_ind,
                     data=indtree,
                     control = list(adapt_delta = .8))
 
-
-
+summary(bio_rand_ind)
 # 2. SHANNON ------------------------------------------------------------------
 
 sw_norm_f <- bf(SW ~ 1 + TREAT + (1 + TREAT|GARDEN), family = gaussian())
