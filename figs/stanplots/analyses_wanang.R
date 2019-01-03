@@ -309,9 +309,9 @@ garden_panel_plot <- function(x) x %>%
   theme_minimal()
 
 # predictions for the AVERAGE block (supplementary?)
-# AllTestData %>%
-#   tidybayes::add_predicted_draws(l1W_ranef, n = 200, re_formula = NULL) %>%
-#   garden_panel_plot
+AllTestData %>%
+  tidybayes::add_predicted_draws(l1W_ranef, n = 200, re_formula = NULL) %>%
+  garden_panel_plot
 
 
 
@@ -330,24 +330,25 @@ bio_rand_ind <- brm(bio_lnorm_ind,
                     control = list(adapt_delta = .8))
 
 summary(bio_rand_ind)
+
+
 # 2. SHANNON ------------------------------------------------------------------
 
 sw_norm_f <- bf(SW ~ 1 + TREAT + (1 + TREAT|GARDEN), family = gaussian())
 
 mean(AllTestData$SW)
 
-sw_prior <- c(set_prior("normal(0, 3)", class = "Intercept"),
+sw_prior <- c(set_prior("normal(1, 3)", class = "Intercept"),
             set_prior("normal(0, 3)", class = "b"),
             set_prior("normal(0, 4)", class = "sd"),
             set_prior("normal(0, 3)", class = "sigma"),
             set_prior("lkj(2)", class = "cor"))
 
-# How to get better 
+# How to make it better?
 l2W_ranef <- brm(SW ~ TREAT + (1+TREAT|GARDEN),
            data=AllTestData,
            control = list(adapt_delta = 0.999),
-           prior = sw_prior,
-           file = "swAllranef")
+           prior = sw_prior)
 
 
 #plot(l2W_ranef)
@@ -355,50 +356,12 @@ l2W_ranef <- brm(SW ~ TREAT + (1+TREAT|GARDEN),
 pp = brms::pp_check(l2W_ranef)
 pp + theme_bw()
 
-## for comparison another plot using predictions of marginal_effect plot
-# Plot template
-
-colour = as.character(AllTestData$TREAT)
-colour[colour == "CONTROL"] <- "grey50"
-colour[colour == "FUNGICIDE"] <- "grey50"
-colour[colour == "INSECTICIDE"] <- "red"
-colour[colour == "PREDATOR"] <- "grey50"
-colour[colour == "WEEVIL25"] <- "orange"
-colour[colour == "WEEVIL125"] <- "grey50"
-
-AllTestData$colour = colour
-
-AllTestData %>% 
-  tidybayes::add_predicted_draws(l2W_ranef, n = 1000) %>%
-  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
-  geom_density_ridges(alpha = 0.5) + 
-  scale_fill_manual(values = c("grey", "orange", "red")) +
-  geom_point(aes(x = SW, y = TREAT), size = 3, alpha = 0.1,
-             color = "grey50") + 
-  theme_bw()
-  
-
-# sw_ranef_plot <- marginal_effects(l2W_ranef)    # second model seems to better represent the data
-
-# ggplot(sw_ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
-#   geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
-#   geom_jitter(data=AllTestData, aes(x=TREAT, y=SW, group=GARDEN), 
-#               alpha=0.10, size=4,
-#               position = position_jitter(width = 0.07)) +
-#   geom_line(data=AllTestData, aes(x=TREAT, y=SW, 
-#                                   group=GARDEN, 
-#                                   linetype = GARDEN), 
-#             size = 0.5, alpha=0.25) +
-#   geom_point(shape=21, size=4, fill='red') +
-#   xlab("") +
-#   ylab("Shannon's Index") +
-#   theme_bw () +
-#   theme(panel.grid = element_blank())
 
 # Pairwise comparisons
 
 sph <- stanplot(l2W_ranef, type = "hist", pars="^b_")
 
+png("figs/sw_all_diff.png")
 par(mfrow = c(3,2))
 
 # Change the name of this
@@ -420,8 +383,65 @@ for(type in unique(sph$data$Parameter)){
   abline(v = 0, lty=2)
   
 }
+dev.off()
+
+colour = as.character(AllTestData$TREAT)
+colour[colour == "CONTROL"] <- "grey50"
+colour[colour == "FUNGICIDE"] <- "grey50"
+colour[colour == "INSECTICIDE"] <- "red"
+colour[colour == "PREDATOR"] <- "grey50"
+colour[colour == "WEEVIL25"] <- "orange"
+colour[colour == "WEEVIL125"] <- "grey50"
+
+AllTestData$colour = colour
+
+png("figs/sw_bayes_hist.png")
+AllTestData %>% 
+  tidybayes::add_predicted_draws(l2W_ranef, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT, fill=colour)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = SW, y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+dev.off() 
+
+# sw_ranef_plot <- marginal_effects(l2W_ranef)    # second model seems to better represent the data
+
+# ggplot(sw_ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
+#   geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
+#   geom_jitter(data=AllTestData, aes(x=TREAT, y=SW, group=GARDEN), 
+#               alpha=0.10, size=4,
+#               position = position_jitter(width = 0.07)) +
+#   geom_line(data=AllTestData, aes(x=TREAT, y=SW, 
+#                                   group=GARDEN, 
+#                                   linetype = GARDEN), 
+#             size = 0.5, alpha=0.25) +
+#   geom_point(shape=21, size=4, fill='red') +
+#   xlab("") +
+#   ylab("Shannon's Index") +
+#   theme_bw () +
+#   theme(panel.grid = element_blank())
 
 #stanplot(l2W_ranef, type = "hist",  pars="^b_")
+
+######
+
+garden_panel_plot <- function(x) x %>%
+  ggplot(aes(x = TREAT, y = SW)) +
+  geom_point(aes(y = .prediction), alpha = 0.1, position = position_jitter(width = 0.1)) +
+  geom_point(colour = "red", size = 3) +
+  facet_wrap(~GARDEN) +
+  coord_flip() +
+  theme_minimal()
+
+# predictions for the AVERAGE block (supplementary?)
+AllTestData %>%
+  tidybayes::add_predicted_draws(l2W_ranef, n = 200, re_formula = NULL) %>%
+  garden_panel_plot
+
+
+#####
 
 # 3. SPECIES number ------------------------------------------------------------------- 
 
