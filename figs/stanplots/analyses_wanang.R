@@ -210,7 +210,8 @@ priors_rsi2 <- c(set_prior("normal(4, 2)", class = "Intercept"),
 l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN), 
                  data=AllTestData,
                  prior = priors_rsi2,
-                 control = list(adapt_delta = 0.999))
+                 control = list(adapt_delta = 0.999),
+                 file="liW_ranef")
 
 # Comparisons with model without random slope.
 # compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic")
@@ -239,7 +240,7 @@ sph <- stanplot(l1W_ranef, type = "hist", pars="^b_")
 # Change the name of this
 sph$data$Parameter
 
-png("figs/bio_all_diff.png")
+#png("figs/bio_all_diff.png")
 
 par(mfrow = c(3,2))
 
@@ -260,7 +261,7 @@ for(type in unique(sph$data$Parameter)){
   
 }
 
-dev.off()
+#dev.off()
 
 # Colours based on posterior distributions of differences between
 # control and a treatment
@@ -331,6 +332,18 @@ bio_rand_ind <- brm(bio_lnorm_ind,
 
 summary(bio_rand_ind)
 
+indtree %>% 
+  tidybayes::add_predicted_draws(bio_rand_ind, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "orange", "red")) +
+  geom_point(aes(x = log(BIO), y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+
+
+
+
 
 # 2. SHANNON ------------------------------------------------------------------
 
@@ -344,7 +357,7 @@ sw_prior <- c(set_prior("normal(1, 3)", class = "Intercept"),
             set_prior("normal(0, 3)", class = "sigma"),
             set_prior("lkj(2)", class = "cor"))
 
-# How to make it better?
+# How to make it better? They shouldn't be smaller tan zero!
 l2W_ranef <- brm(SW ~ TREAT + (1+TREAT|GARDEN),
            data=AllTestData,
            control = list(adapt_delta = 0.999),
@@ -425,8 +438,7 @@ dev.off()
 
 #stanplot(l2W_ranef, type = "hist",  pars="^b_")
 
-######
-
+# Checkong model predictions... shouldn't predict values smaller than zero!
 garden_panel_plot <- function(x) x %>%
   ggplot(aes(x = TREAT, y = SW)) +
   geom_point(aes(y = .prediction), alpha = 0.1, position = position_jitter(width = 0.1)) +
@@ -439,24 +451,22 @@ garden_panel_plot <- function(x) x %>%
 AllTestData %>%
   tidybayes::add_predicted_draws(l2W_ranef, n = 200, re_formula = NULL) %>%
   garden_panel_plot
+# end of stuff
 
-
-#####
 
 # 3. SPECIES number ------------------------------------------------------------------- 
 
-sp_pois_f <- bf(SPEC_NO ~ 1 + TREAT + (1 + TREAT|GARDEN), family = "negbinomial")
+sp_negb_f <- bf(SPEC_NO ~ 1 + TREAT + (1 + TREAT|GARDEN), family = "negbinomial")
 
 # Set some priors
 
-# <<<<< I DONT KNOW HOW TO SPECIFY THEM!!! >>>>
-
-# sp_no_priors <- c(
-#   set_prior("poisson(15)", class = "b"),
-#   set_prior("lkj(1)", class = "cor"),
-#   set_prior("poisson(15)", class = "Intercept"),
-#   set_prior("normal(0,1)", class = "sd")
-# )
+# I DONT KNOW HOW TO SPECIFY THEM!!!
+sp_negbin_priors <- c(
+  set_prior("poisson(15)", class = "b"),
+  set_prior("lkj(1)", class = "cor"),
+  set_prior("poisson(15)", class = "Intercept"),
+  set_prior("normal(0,1)", class = "sd")
+)
 
 # Prior predictive check!
 # sample from the prior distribution
