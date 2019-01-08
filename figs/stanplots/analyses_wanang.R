@@ -404,7 +404,7 @@ ld_rand_ind <- brm(ld_gaus_ind,
                    prior = ld_prior)
 
 
-# These values are logit transformed... 
+# Transform them back to proportions
 library(boot)
 indtree$HERB <- inv.logit(indtree$HERB)
 indtree$HERB[indtree$HERB == 0] <- 1e-07
@@ -770,23 +770,72 @@ TreeTestDataset %>%
   theme_bw()
 dev.off()
 
-## for comparison another plot using predictions of marginal_effect plot
-# Plot template
-
-
 # 6. Tree Diversity --------------------------------------------------------------
 
-# l2Wt <- brm(DivTree~TREATMENT + (1|GARDEN), data=TreeTestDataset,
-#             control = list(adapt_delta = 0.99),
-#             file="swiTre")
+# l2Wtbio <- brm(DivTree~TREATMENT + (1 + TREATMENT|GARDEN) + logBio, data=TreeTestDataset,
+#             control = list(adapt_delta = 0.99))
+
+lognormDiv = bf(DivTree~TREATMENT + (1 + TREATMENT|GARDEN), family = lognormal())
+
+l2Wt_ran <- brm(lognormDiv, data=TreeTestDataset,
+               control = list(adapt_delta = 0.99))
+
+# lognorm_int_Div = bf(DivTree~TREATMENT + (1|GARDEN), family = "lognormal")
+# 
+# l2Wt_int <- brm(lognorm_int_Div, data=TreeTestDataset,
+#                control = list(adapt_delta = 0.99))
+
+
+# l2Wt_invSimp <- brm(invSimp~TREATMENT + (1 + TREATMENT|GARDEN), data=TreeTestDataset,
+#             control = list(adapt_delta = 0.8))
+
+compare_ic(waic(l2Wt_ran), waic(l2Wt_int), ic = "waic")
+
+pp <- brms::pp_check(l2Wt_ran)
+pp + theme_bw()
+
+TreeTestDataset %>% 
+  tidybayes::add_predicted_draws(l2Wt_ran, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREATMENT, group = TREATMENT)) + 
+  geom_density_ridges(alpha = 0.5) + xlim(-1,3) +
+  scale_fill_manual(values = c("grey", "red","orange")) +
+  geom_point(aes(x = DivTree, y = TREATMENT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+
+
+# Extreme predictions
+ep = TreeTestDataset %>% 
+  tidybayes::add_predicted_draws(l2Wt_ran, n = 1000)
+
+# Hey, I think you better use Hill numbers (so exponential Shannon and inverse Simpson) for diversity calculations and comparisons. Cf. Jost, L. (2006). Entropy and diversity. Oikos, 113(2), 363–375.
+# or: Chao, A., Chiu, C.-H., & Jost, L. (2014). Unifying Species Diversity, Phylogenetic Diversity, Functional Diversity, and Related Similarity and Differentiation Measures Through Hill Numbers. 
+# Annual Review of Ecology, Evolution, and Systematics, 45, 297–324. doi:10.1146/annurev-ecolsys-120213-091540
+
+# There are good and bad diversity measurement concepts and the distinction between them is determined by properties, contexts and individual judgements.
+# I suggest you try to asses the "true" species diversity, using species richness and the effective number of species, sensu Jost (2006).
+# Jost, L. 2006. Entropy and diversity. - Oikos 113: 363–374
+
+hist(log(ep$.prediction))
 
 # 7. Richness ---------------------------------
-# l3Wt <- brm(species~TREATMENT+(1|GARDEN), data=TreeTestDataset,
-#               family = poisson(),
-#               control = list(adapt_delta = 0.99),
-#               file="nosTre")
+rich_bf = bf(species~TREATMENT+(1+TREATMENT|GARDEN), family = "poisson")
 
+l3Wt <- brm(rich_bf, 
+            data=TreeTestDataset,
+            control = list(adapt_delta = 0.8))
 
+TreeTestDataset %>%
+  tidybayes::add_predicted_draws(l3Wt, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREATMENT, group = TREATMENT)) + 
+  geom_density_ridges(alpha = 0.5) +
+  scale_fill_manual(values = c("grey", "red","orange")) +
+  geom_point(aes(x = species, y = TREATMENT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+
+  
+  
 # 8. Evenness ---------------
 # l4Wt <- brm(Evenness~TREATMENT + (1|GARDEN), data=TreeTestDataset,
 #              family = Beta(),
