@@ -23,10 +23,12 @@ TreeTestDataset$TREATMENT = factor(TreeTestDataset$TREATMENT,
 
 # Individual based biomass and trait data
 inddat <- read.table("datasets/inddataWanang.txt")
-inddat$LIFE.FORM <-as.character(inddat$LIFE.FORM)
+#inddat$LIFE.FORM <-as.character(inddat$LIFE.FORM)
 indtree <- inddat[inddat$LIFE.FORM %in% c("shrub","tree"), ]
 
 indtree$TREAT = factor(indtree$TREAT, levels = treat_levels)
+#indtree$SP_CODE = as.character(indtree$SP_CODE)
+
 
 # Load packages
 library(brms)
@@ -834,7 +836,28 @@ TreeTestDataset %>%
              color = "grey50") + 
   theme_bw()
 
+sph <- stanplot(l3Wt, type = "hist", pars="^b_")
+#png("figs/bio_tree_diff.png")
+X11(10,10)
+par(mfrow = c(3,2))
+for(type in unique(sph$data$Parameter)){
   
+  vs <- sph$data$value[sph$data$Parameter == type]
+  
+  colour = "lightblue"
+  
+  if (mean(vs<0) > 0.90) colour = "orange"
+  if (mean(vs<0) > 0.95) colour = "red"
+  
+  hist(vs, breaks = 50,
+       main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
+       xlab="Difference", col = colour)
+  
+  abline(v = 0, lty=2)
+  
+}
+
+dev.off()
   
 # 8. Evenness ---------------
 # l4Wt <- brm(Evenness~TREATMENT + (1|GARDEN), data=TreeTestDataset,
@@ -844,68 +867,113 @@ TreeTestDataset %>%
 
 # 9. Stem number -----------------
 
-# l5Wt <- brm(stems~TREATMENT + (1|GARDEN), data=TreeTestDataset,
-#             family=poisson(),
-#             control = list(adapt_delta = 0.9999),
-#             file="steTre")
+l5Wt <- brm(stems~TREATMENT + (1+TREATMENT|GARDEN), 
+            data=TreeTestDataset,
+            family=poisson(),
+            control = list(adapt_delta = 0.8))
 
 
+l5Wt_nb <- brm(stems~TREATMENT + (1+TREATMENT|GARDEN), 
+            data=TreeTestDataset,
+            family= "negbinomial",
+            control = list(adapt_delta = 0.8))
+
+compare_ic(waic(l5Wt), waic(l5Wt_nb), ic = "waic")
+
+hist(TreeTestDataset$stems)
 
 
+TreeTestDataset %>%
+  tidybayes::add_predicted_draws(l5Wt, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREATMENT, group = TREATMENT)) + 
+  geom_density_ridges(alpha = 0.5) + xlim(c(0,100)) +
+  scale_fill_manual(values = c("grey", "red","orange")) +
+  geom_point(aes(x = stems, y = TREATMENT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
 
-#### Under construction!
-plotMyResults <- function(l2W_ranef){
+
+sph <- stanplot(l5Wt, type = "hist", pars="^b_")
+#png("figs/bio_tree_diff.png")
+X11(10,10)
+par(mfrow = c(3,2))
+for(type in unique(sph$data$Parameter)){
   
-  pp = brms::pp_check(l2W_ranef)
-  pp + theme_bw()
+  vs <- sph$data$value[sph$data$Parameter == type]
   
-  sw_ranef_plot <- marginal_effects(l2W_ranef)    # second model seems to better represent the data
+  colour = "lightblue"
   
-  ## for comparison another plot using predictions of marginal_effect plot
-  # Plot template
+  if (mean(vs<0) > 0.90) colour = "orange"
+  if (mean(vs<0) > 0.95) colour = "red"
   
-  p <- ggplot(sw_ranef_plot$TREAT, aes(x = TREAT, y = estimate__)) +
-    geom_errorbar(aes(ymin=lower__, ymax=upper__), position=position_dodge(), size=1, width=.5) +
-    geom_jitter(data=AllTestData, aes(x=TREAT, y=SW, group=GARDEN), 
-                alpha=0.10, size=4,
-                position = position_jitter(width = 0.07)) +
-    geom_line(data=AllTestData, aes(x=TREAT, y=SW, 
-                                    group=GARDEN, 
-                                    linetype = GARDEN), 
-              size = 0.5, alpha=0.25) +
-    geom_point(shape=21, size=4, fill='red') +
-    xlab("") +
-    ylab("Shannon's Index") +
-    theme_bw () +
-    theme(panel.grid = element_blank())
+  hist(vs, breaks = 50,
+       main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
+       xlab="Difference", col = colour)
   
-  # Pairwise comparisons
-  sph <- stanplot(l2W_ranef, type = "hist", pars="^b_")
-  
-  par(mfrow = c(3,2))
-  
-  for(type in unique(sph$data$Parameter)){
-    
-    vs <- sph$data$value[sph$data$Parameter == type]
-    
-    colour = "lightblue"
-    
-    if (mean(vs<0) > 0.90) colour = "orange"
-    if (mean(vs<0) > 0.95) colour = "red"
-    
-    hist(vs, breaks = 50,
-         main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
-         xlab="Difference", col = colour)
-    
-    abline(v = 0, lty=2)
-    
-  }
-  
-  p
+  abline(v = 0, lty=2)
   
 }
 
-### Plots in a panel -------------------------- UNDER CONSTRUCTION
+
+# 9.b stems per individual --------
+
+l5Wt_ind <- brm(NO_STEMS~TREAT + (1+TREAT|BLOCK) + (1+TREAT|SP_CODE), 
+            data=indtree,
+            family=poisson(),
+            control = list(adapt_delta = 0.8))
+
+
+
+indtree %>%
+  tidybayes::add_predicted_draws(l5Wt_ind, n = 1000, allow_new_levels = TRUE) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT)) + 
+  geom_density_ridges(alpha = 0.5) + xlim(c(0,100)) +
+  scale_fill_manual(values = c("grey", "red","orange")) +
+  geom_point(aes(x = NO_STEMS, y = TREAT), size = 3, alpha = 0.1,
+             color = "grey50") + 
+  theme_bw()
+
+# 10. SLA --------------
+
+sla <- brm(log(SLA) ~ TREAT + (1+TREAT|BLOCK) + (1+TREAT|SP_CODE),
+           data = inddat,
+           control = list(adapt_delta = 0.8))
+
+sph <- stanplot(sla, type = "hist", pars="^b_")
+X11(10,10)
+par(mfrow = c(3,2))
+
+for(type in unique(sph$data$Parameter)){
+  
+  vs <- sph$data$value[sph$data$Parameter == type]
+  
+  colour = "lightblue"
+  
+  if (mean(vs<0) > 0.90) colour = "orange"
+  if (mean(vs<0) > 0.95) colour = "red"
+  
+  hist(vs, breaks = 50,
+       main = paste(type, " ", round(mean(vs<0)*100,1), " %"),
+       xlab="Difference", col = colour)
+  
+  abline(v = 0, lty=2)
+  
+}
+
+
+
+inddat %>% 
+  tidybayes::add_predicted_draws(sla, n = 1000, allow_new_levels = TRUE) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT)) + 
+  geom_density_ridges(alpha = 0.5) + 
+  scale_fill_manual(values = c("grey", "red","orange")) +
+  #geom_point(aes(x = log(WEIGHT), y = TREAT), size = 3, alpha = 0.1,
+  #           color = "grey50") + 
+  theme_bw()
+
+# 11. LDMC -----------------
+
+# Plots in a panel ------------------
 
 #### Hold the plot
 BD <- AllTestData %>% 
