@@ -329,8 +329,11 @@ AllTestData %>%
 # Specify the equation
 # UNDER CONSTRUCTION - DON'T EVEN KNOW IF THIS IS OK
 
-bio_gaus_ind <- bf(WEIGHT ~ 1 + TREAT + (1 + TREAT|BLOCK) + (1 + TREAT|SP_CODE),
+bio_ln_ind_rbsp <- bf(WEIGHT ~ 1 + TREAT + (1 + TREAT|BLOCK) + (1 + TREAT|SP_CODE),
                    family = "lognormal")
+
+bio_ln_ind_rb <- bf(WEIGHT ~ 1 + TREAT + (1 + TREAT|BLOCK),
+                    family = "lognormal")
 
 ## Set some priors 
 priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
@@ -339,13 +342,17 @@ priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
             set_prior("normal(0, 3)", class = "sigma"),
             set_prior("lkj(2)", class = "cor"))
 
-bio_rand_ind <- brm(bio_gaus_ind,
+lnbio_random_block <- brm(bio_ln_ind_rb,
                     data=indtree,
                     control = list(adapt_delta = .8))
 
-summary(bio_rand_ind)
+lnbio_random_block_species <- brm(bio_ln_ind_rbsp,
+                    data=indtree,
+                    control = list(adapt_delta = .8))
 
-sph <- stanplot(bio_rand_ind, type = "hist", pars="^b_")
+compare_ic(waic(lnbio_random_block), waic(lnbio_random_block_species), ic = "waic")
+
+sph <- stanplot(lnbio_random_block_species, type = "hist", pars="^b_")
 
 png("figs/bio_ind_tree_diff.png")
 #X11(width=10, height=10)
@@ -377,7 +384,7 @@ colour[colour == "WEEVIL25"] <- "red"
 colour[colour == "WEEVIL125"] <- "red"
 indtree$colour = colour
 
-png("figs/bio_ind_bayes_hist.png")
+#png("figs/bio_ind_bayes_hist.png")
 indtree %>% 
   tidybayes::add_predicted_draws(bio_rand_ind, n = 1000) %>%
   ggplot(aes(x = log(.prediction), y = TREAT, group = TREAT, fill=colour)) + 
@@ -386,10 +393,9 @@ indtree %>%
   #geom_point(aes(x = log(WEIGHT), y = TREAT), size = 3, alpha = 0.1,
   #           color = "grey50") + 
   theme_bw()
-dev.off()
+#dev.off()
 
 # 1c. leaf damage ----------------------
-
 
 # Leaf damage logit values
 ld_gaus_ind <- bf(HERB ~ 1 + TREAT + (1 + TREAT|BLOCK) + (1 + TREAT|SP_CODE))
