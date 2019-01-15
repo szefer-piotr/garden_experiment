@@ -37,7 +37,7 @@ library(bayesplot)
 library(tidybayes)
 library(dplyr)
 library(ggridges)
-
+library(nlme)
 library(stringr)
 
 # plots of the raw data ---------------------------------------------------
@@ -332,8 +332,13 @@ AllTestData %>%
 bio_ln_ind_rbsp <- bf(WEIGHT ~ 1 + TREAT + (1 + TREAT|BLOCK) + (1 + TREAT|SP_CODE),
                    family = "lognormal")
 
+bio_ln_ind_rintsp <- bf(WEIGHT ~ 1 + TREAT + (1 + TREAT|BLOCK) + (1|SP_CODE))
+
 bio_ln_ind_rb <- bf(WEIGHT ~ 1 + TREAT + (1 + TREAT|BLOCK),
                     family = "lognormal")
+
+# nlme estimates
+blirbsp <- lme
 
 ## Set some priors 
 priors <- c(set_prior("normal(4, 2)", class = "Intercept"),
@@ -346,16 +351,23 @@ lnbio_random_block <- brm(bio_ln_ind_rb,
                     data=indtree,
                     control = list(adapt_delta = .8))
 
+lnbio_random_block_int_sp <- brm(bio_ln_ind_rintsp,
+                                  data=indtree,
+                                  control = list(adapt_delta = .8))
+
 lnbio_random_block_species <- brm(bio_ln_ind_rbsp,
                     data=indtree,
                     control = list(adapt_delta = .8))
 
-compare_ic(waic(lnbio_random_block), waic(lnbio_random_block_species), ic = "waic")
+compare_ic(waic(lnbio_random_block), 
+           waic(lnbio_random_block_species), 
+           waic(lnbio_random_block_int_sp),
+           ic = "waic")
 
-sph <- stanplot(lnbio_random_block_species, type = "hist", pars="^b_")
+sph <- stanplot(lnbio_random_block, type = "hist", pars="^b_")
 
 png("figs/bio_ind_tree_diff.png")
-#X11(width=10, height=10)
+X11(width=10, height=10)
 par(mfrow = c(3,2))
 for(type in unique(sph$data$Parameter)){
   
@@ -386,8 +398,8 @@ indtree$colour = colour
 
 #png("figs/bio_ind_bayes_hist.png")
 indtree %>% 
-  tidybayes::add_predicted_draws(bio_rand_ind, n = 1000) %>%
-  ggplot(aes(x = log(.prediction), y = TREAT, group = TREAT, fill=colour)) + 
+  tidybayes::add_predicted_draws(lnbio_random_block_int_sp, n = 1000) %>%
+  ggplot(aes(x = .prediction, y = TREAT, group = TREAT)) + 
   geom_density_ridges(alpha = 0.5) + 
   scale_fill_manual(values = c("grey", "red","orange")) +
   #geom_point(aes(x = log(WEIGHT), y = TREAT), size = 3, alpha = 0.1,
