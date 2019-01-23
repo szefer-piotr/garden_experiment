@@ -181,7 +181,7 @@ comb <- comb[-which(comb[,1] == comb[,2]),]
 cvst <- list() # for most abundant species comparisons
 unique_spec <- list() # unique species datasets
 pair_comp <- list() # community comparisons RDA - trees
-pair_comp_treat <- 
+#pair_comp_treat <- 
 
 for (comb_no in 1:dim(comb)[1]){
   # step 1 subset the dataset
@@ -195,7 +195,7 @@ for (comb_no in 1:dim(comb)[1]){
                          comb[comb_no,]$Var2, sep="_")
   
   pair_comp[[usp_name_list]] <- contingencyTable2(subset, "SP_CODE", "CODE","WEIGHT")
-  
+  #pair_comp_treat[[usp_name_list]] <- 0 #Alll plots with their treatments.
   # subset_RDA_main <- contingencyTable2(subset_main, "SP_CODE", "CODE","WEIGHT")
   
   # step 2 most often occuring species present in both
@@ -223,9 +223,96 @@ for (comb_no in 1:dim(comb)[1]){
     name_list <- paste(comb[comb_no,]$Var1,
                        comb[comb_no,]$Var2, 
                        spec,sep="_")
-    cvsi[[name_list]] <- contingencyTable2(sub_dat, "BLOCK", "TREAT", "WEIGHT")
+    cvst[[name_list]] <- contingencyTable2(sub_dat, "BLOCK", "TREAT", "WEIGHT")
   }
 }
+
+
+# models and plots for species
+
+stacked_cvst <- data.frame()
+
+for (i in 1:length(names(cvst))){
+  nm <- names(cvst)[i]
+  sp_data <- cvst[[nm]]
+  #sp_data <- 1000*cvst[[nm]]
+  sp_stack <- stack(as.data.frame(sp_data))
+  sp_stack$block <- rownames(sp_data)
+  sp_stack$type <- nm
+  stacked_cvst <- rbind(stacked_cvst, sp_stack)
+}
+
+# convert to grams
+
+# diff <- log(sp_data[,1]+1) - log(sp_data[,2]+1)
+# t.test(diff)
+
+# lines
+p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1), group=block)) +
+  geom_line(aes(linetype = block), size = 0.5, alpha=0.15) +
+  facet_wrap(~type, scales = "free") +
+  geom_point(size = 1.7) + theme_bw()
+
+p1
+
+# summaries
+p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1))) +
+  facet_wrap(~type, scales = "free") +
+  geom_point(size = 3, col = "grey80") + theme_bw()
+
+p1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+                geom="errorbar", width=0.2, lwd=1.5) +
+  stat_summary(fun.y=mean, geom="point", cex = 5)
+
+# some good models for this?
+# tweedie continuous data?
+library(cplm)
+
+data(FineRoot)
+
+# use Stock and Spacing as main effects and Plant as random effect
+f1 <- cpglmm(RLD~  Stock + Spacing +  (1|Plant) , 
+             link="log", data = FineRoot)
+summary(f1)
+
+# most of the methods defined in lme4 are directly applicable
+coef(f1); fixef(f1); ranef(f1)  #coefficients
+VarCorr(f1)  #variance components
+
+# add another random effect
+f2 <- cpglmm(RLD~  Stock + Spacing +  (1|Plant) + (1|Zone), 
+             link="log", data = FineRoot)
+
+# test the additional treatment effect
+anova(f1,f2)
+
+f0 <- cpglmm(log(values+1)~(1|block),
+             data = sp_stack)
+f1 <- cpglmm(log(values+1)~ind+ (1|block),
+          data = sp_stack)
+
+anova(f0, f1)
+
+library(nlme)
+l1 <- lme(log(values+1)~ind, random = ~1|block,
+          data = sp_stack)
+
+l2 <- lme(log(values+1)~ind, random = ~1|block,
+    weights=varIdent(form=~1|ind),
+    data = sp_stack)
+
+AIC(l1, l2)
+
+summary(l1)
+# nod1 <- brm(log(values+1)~ind+(1|block), data = sp_stack)
+# 
+# # plots for the bayesian model
+# sp_stack %>% 
+#   tidybayes::add_predicted_draws(nod1, n = 1000) %>%
+#   ggplot(aes(y = log(.prediction+1), x = ind)) + 
+#   geom_jitter() +
+#   theme_bw()
+
 
 
 # see if they are most abundant as well
@@ -272,4 +359,12 @@ panelspecies + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1),
 selected_subset$SP_CODE <- as.character(selected_subset$SP_CODE)
 selected_subset$TREAT <- as.character(selected_subset$TREAT)
 table(selected_subset$SP_CODE, selected_subset$TREAT)
-        
+
+## RDA once again -----
+
+#instead of kg If I use grams 
+library(vegan)
+plot(rda(log(1000*pair_comp[[1]]+1))) #whoaaaaaat?!
+
+ct_main <- contingencyTable2(main, "CODE","SP_CODE", "WEIGHT")
+plot(rda(log(ct_main+1)~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test))
