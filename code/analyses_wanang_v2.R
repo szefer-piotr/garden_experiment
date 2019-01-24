@@ -62,7 +62,6 @@ tree_test <- read.table("datasets/wng_tree_test.txt")
 # 0.b Remove insecticide ----
 test <- test[rownames(test) != "WG1P6", ]
 tree_test <- tree_test[rownames(tree_test) != "WG1P6", ]
-ggplot(test, aes(y=log(BIO), x=TREAT)) + geom_point()
 
 
 # Statistical models -----
@@ -181,11 +180,13 @@ comb <- comb[-which(comb[,1] == comb[,2]),]
 cvst <- list() # for most abundant species comparisons
 unique_spec <- list() # unique species datasets
 pair_comp <- list() # community comparisons RDA - trees
-#pair_comp_treat <- 
+pair_comp_treat <- list()
+
+comb_no <-1
 
 for (comb_no in 1:dim(comb)[1]){
-  # step 1 subset the dataset
-  subset <- tree[tree$TREAT %in% c(as.character(comb[comb_no,]$Var1), 
+  # step 1 subset the dataset to a given pair of treatments
+  subset <- tree[tree$TREAT %in% c(as.character(comb[comb_no,]$Var1), #control
                                    as.character(comb[comb_no,]$Var2)), ]
   
   # subset_main <- main[main$TREAT %in% c(as.character(comb[comb_no,]$Var1), 
@@ -195,7 +196,9 @@ for (comb_no in 1:dim(comb)[1]){
                          comb[comb_no,]$Var2, sep="_")
   
   pair_comp[[usp_name_list]] <- contingencyTable2(subset, "SP_CODE", "CODE","WEIGHT")
-  #pair_comp_treat[[usp_name_list]] <- 0 #Alll plots with their treatments.
+  treats <- subset[, c("CODE", "BLOCK","TREAT")]
+  pair_comp_treat[[usp_name_list]] <- treats[!duplicated(treats),] #Alll plots with their treatments.
+  
   # subset_RDA_main <- contingencyTable2(subset_main, "SP_CODE", "CODE","WEIGHT")
   
   # step 2 most often occuring species present in both
@@ -227,7 +230,9 @@ for (comb_no in 1:dim(comb)[1]){
   }
 }
 
-
+# Remove tremor from cvst data
+cvst <- cvst[names(cvst) != "CONTROL_FUNGICIDE_TREMOR"]
+length(cvst)
 # models and plots for species
 
 stacked_cvst <- data.frame()
@@ -247,63 +252,174 @@ for (i in 1:length(names(cvst))){
 # diff <- log(sp_data[,1]+1) - log(sp_data[,2]+1)
 # t.test(diff)
 
-# lines
+#get rid of TREMOR form the comparisons
+stacked_cvst <- stacked_cvst[stacked_cvst$type != "CONTROL_FUNGICIDE_TREMOR", ]
+
+# Statistical tests for biomass increase for individual species
+
+# Tweedie distriobution
+# library(cplm)
+# colours <- c()
+
+# for (name in 1:length(names(cvst))){
+  sp_data <- cvst[[name]]
+  
+  # Add one and se
+  
+  print(names(cvst)[[name]])
+  #sp_data <- 1000*cvst[[nm]]
+  sp_stack <- stack(as.data.frame(sp_data))
+  sp_stack$block <- rownames(sp_data)
+
+f0 <- cpglmm(log(values+1)~(1|block),
+             sigma = ind, data = sp_stack)
+  f1 <- cpglmm(log(values+1)~ind+ (1|block),
+               data = sp_stack)
+  pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
+  print(pval)
+  colours <- c(colours, "black")
+  if (pval <= 0.05){
+    colours <- c(colours, "red")
+  } else {
+    colours <- c(colours, "grey30")
+      }
+# }
+
+
+# using classic mixed effect models
+colours <- c()
+
+library(caret)
+
+for (name in 1:length(names(cvst))){
+  sp_data <- cvst[[name]]
+  print(names(cvst)[[name]])
+  #sp_data <- 1000*cvst[[nm]]
+  sp_stack <- stack(as.data.frame(sp_data))
+  sp_stack$block <- rownames(sp_data)
+  
+  # Test for heteroscedasticity
+  
+  ltest <- leveneTest(values~ind, data=sp_stack)
+  
+  print(ltest)
+  
+  # valuesBCMod <- caret::BoxCoxTrans(sp_stack$values+1)
+  # sp_stack$values <- predict(valuesBCMod, 
+  #                            sp_stack$values)
+  
+  f0 <- lmer(log(values+1)~(1|block),
+             data = sp_stack)
+  f1 <- lmer(log(values+1)~ind+ (1|block),
+               data = sp_stack)
+  pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
+  print(pval)
+  colours <- c(colours, "black")
+  if (pval <= 0.05){
+    colours <- c(colours, "red")
+  } else {
+    colours <- c(colours, "grey30")
+  }
+}
+
+
+
+# >>> FIG. 3. B using differences ----
+
+# under construction
+# colours <- c()
+# 
+# for (name in 1:length(names(cvst))){
+#   sp_data <- cvst[[name]]
+#   print(names(cvst)[[name]])
+#   
+#   diffs <- sp_data[,1]-sp_data[,2]
+#   
+#   print(t.test(diffs)$p.value)
+  # Stack up the data
+  # #sp_data <- 1000*cvst[[nm]]
+  # sp_stack <- stack(as.data.frame(sp_data))
+  # sp_stack$block <- rownames(sp_data)
+  # 
+  # log(sp_stack[sp_stack$ind == ,]$values + 1) - log(sp_stack[6:10,]$values + 1)
+  # 
+  # f0 <- lmer(log(values+1)~(1|block),
+  #            data = sp_stack)
+  # f1 <- lmer(log(values+1)~ind+ (1|block),
+  #            data = sp_stack)
+  # pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
+  # print(pval)
+  # colours <- c(colours, "black")
+  # if (pval <= 0.05){
+  #   colours <- c(colours, "red")
+  # } else {
+  #   colours <- c(colours, "grey30")
+  # }
+# }
+
+# actuall plot ------
+
+# lines log +1
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1), group=block)) +
   geom_line(aes(linetype = block), size = 0.5, alpha=0.15) +
-  facet_wrap(~type, scales = "free") +
+  facet_wrap(~type, scales = "free", nrow=5, ncol =4) +
   geom_point(size = 1.7) + theme_bw()
+
+# raw
+p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
+  geom_line(aes(linetype = block), size = 0.5, alpha=0.15) +
+  facet_wrap(~type, scales = "free", nrow=5, ncol =4) +
+  geom_point(size = 1.7) + theme_bw()
+
 
 p1
 
-# summaries
+# summaries, but these go below zero!
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1))) +
-  facet_wrap(~type, scales = "free") +
+  facet_wrap(~type, scales = "free", ncol=4, nrow=5) +
   geom_point(size = 3, col = "grey80") + theme_bw()
 
 p1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
-                geom="errorbar", width=0.2, lwd=1.5) +
-  stat_summary(fun.y=mean, geom="point", cex = 5)
+                geom="errorbar", color =colours, width=0.2, lwd=1.5) +
+  stat_summary(fun.y=mean, geom="point", color =colours, cex = 5)
 
 # some good models for this?
 # tweedie continuous data?
-library(cplm)
 
-data(FineRoot)
+# example! 
 
-# use Stock and Spacing as main effects and Plant as random effect
-f1 <- cpglmm(RLD~  Stock + Spacing +  (1|Plant) , 
-             link="log", data = FineRoot)
-summary(f1)
+qqnorm(log(sp_stack[1:5,]$values + 1) - log(sp_stack[6:10,]$values + 1))
+qqline(log(sp_stack[1:5,]$values + 1) - log(sp_stack[6:10,]$values + 1))
+(sp_stack[1:5,]$values)
+qqnorm(sp_stack[6:10,]$values)
 
-# most of the methods defined in lme4 are directly applicable
-coef(f1); fixef(f1); ranef(f1)  #coefficients
-VarCorr(f1)  #variance components
 
-# add another random effect
-f2 <- cpglmm(RLD~  Stock + Spacing +  (1|Plant) + (1|Zone), 
-             link="log", data = FineRoot)
 
-# test the additional treatment effect
-anova(f1,f2)
+sp_stack
+# bayesian
+f2 <- bcplm(values~ind+(1|block),
+            data = sp_stack, n.iter = 15000,
+              n.burnin = 5000, n.thin = 10)
 
-f0 <- cpglmm(log(values+1)~(1|block),
-             data = sp_stack)
-f1 <- cpglmm(log(values+1)~ind+ (1|block),
-          data = sp_stack)
-
-anova(f0, f1)
-
-library(nlme)
-l1 <- lme(log(values+1)~ind, random = ~1|block,
-          data = sp_stack)
-
-l2 <- lme(log(values+1)~ind, random = ~1|block,
-    weights=varIdent(form=~1|ind),
-    data = sp_stack)
-
-AIC(l1, l2)
-
-summary(l1)
+# gelman.diag(f2$sims.list)
+# summary(f2)
+# 
+# acfplot(f2$sims.list, lag.max = 20)
+# xyplot(f2$sims.list)                              
+# densityplot(f2$sims.list)               
+# summary(f2)
+# plot(f2)
+# 
+# library(nlme)
+# l1 <- lme(log(values+1)~ind, random = ~1|block,
+#           data = sp_stack)
+# l2 <- lme(log(values+1)~ind, random = ~1|block,
+#     weights=varIdent(form=~1|ind),
+#     data = sp_stack)
+# 
+# AIC(l1, l2)
+# 
+# summary(l1)
 # nod1 <- brm(log(values+1)~ind+(1|block), data = sp_stack)
 # 
 # # plots for the bayesian model
@@ -367,4 +483,155 @@ library(vegan)
 plot(rda(log(1000*pair_comp[[1]]+1))) #whoaaaaaat?!
 
 ct_main <- contingencyTable2(main, "CODE","SP_CODE", "WEIGHT")
-plot(rda(log(ct_main+1)~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test))
+plot(rda(log(1000*ct_main+1)~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test))
+
+ds_num <- 5
+m1 <- rda(t(log(pair_comp[[ds_num]]+1))~TREAT, data = pair_comp_treat[[ds_num]])
+anova(m1, by="terms", permutations = 999)
+plot(m1)
+
+dim(pair_comp[[1]])
+
+# dominance plots ----
+ds_num <- 5
+
+ds <- log(pair_comp[[ds_num]]+1) # logged values
+# ds <- log(1000*pair_comp[[ds_num]]+1) # logged grams
+# ds <- pair_comp[[ds_num]] # raw
+
+trt <- pair_comp_treat[[ds_num]]
+trt_a <-unique(trt$TREAT)[1]
+trt_b <-unique(trt$TREAT)[2]
+
+ds_a <- ds[, trt$TREAT == trt_a]
+ds_b <- ds[, trt$TREAT == trt_b]
+
+par(mfrow = c(1,2))
+
+ds_a[ds_a == 0] <- NA
+lineup <- order(rowSums(ds_a, na.rm = T))
+boxplot(t(ds_a[rev(lineup), ]), main = trt_a, las=2)
+
+ds_b[ds_b == 0] <- NA
+lineup <- order(rowSums(ds_b, na.rm = T))
+boxplot(t(ds_b[rev(lineup), ]), main = trt_b, las=2)
+
+
+
+
+
+
+### experiments with hurdle lognormal model -----
+
+# vignette:
+#https://cloud.r-project.org/web/packages/GLMMadaptive/vignettes/ZeroInflated_and_TwoPart_Models.html
+
+library(GLMMadaptive)
+
+
+set.seed(1234)
+n <- 100 # number of subjects
+K <- 8 # number of measurements per subject
+t_max <- 5 # maximum follow-up time
+
+# we constuct a data frame with the design: 
+# everyone has a baseline measurment, and then measurements at random follow-up times
+DF <- data.frame(id = rep(seq_len(n), each = K),
+                 time = c(replicate(n, c(0, sort(runif(K - 1, 0, t_max))))),
+                 sex = rep(gl(2, n/2, labels = c("male", "female")), each = K))
+
+# design matrices for the fixed and random effects non-zero part
+X <- model.matrix(~ sex * time, data = DF)
+Z <- model.matrix(~ time, data = DF)
+# design matrices for the fixed and random effects zero part
+X_zi <- model.matrix(~ sex, data = DF)
+Z_zi <- model.matrix(~ 1, data = DF)
+
+betas <- c(-2.13, -0.25, 0.24, -0.05) # fixed effects coefficients non-zero part
+sigma <- 0.5 # standard deviation error terms non-zero part
+gammas <- c(-1.5, 0.5) # fixed effects coefficients zero part
+D11 <- 0.5 # variance of random intercepts non-zero part
+D22 <- 0.1 # variance of random slopes non-zero part
+D33 <- 0.4 # variance of random intercepts zero part
+
+# we simulate random effects
+b <- cbind(rnorm(n, sd = sqrt(D11)), rnorm(n, sd = sqrt(D22)), rnorm(n, sd = sqrt(D33)))
+# linear predictor non-zero part
+eta_y <- as.vector(X %*% betas + rowSums(Z * b[DF$id, 1:2, drop = FALSE]))
+# linear predictor zero part
+eta_zi <- as.vector(X_zi %*% gammas + rowSums(Z_zi * b[DF$id, 3, drop = FALSE]))
+# we simulate log-normal longitudinal data
+DF$y <- exp(rnorm(n * K, mean = eta_y, sd = sigma))
+# we set the zeros from the logistic regression
+DF$y[as.logical(rbinom(n * K, size = 1, prob = plogis(eta_zi)))] <- 0
+
+hurdle.lognormal <- function () {
+  stats <- make.link("identity")
+  log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+    sigma <- exp(phis)
+    # binary indicator for y > 0
+    ind <- y > 0
+    # non-zero part
+    eta <- as.matrix(eta)
+    eta_zi <- as.matrix(eta_zi)
+    out <- eta
+    out[ind, ] <- plogis(eta_zi[ind, ], lower.tail = FALSE, log.p = TRUE) + 
+      dnorm(x = log(y[ind]), mean = eta[ind, ], sd = sigma, log = TRUE)
+    # zero part
+    out[!ind, ] <- plogis(eta_zi[!ind, ], log.p = TRUE)
+    attr(out, "mu_y") <- eta
+    out
+  }
+  score_eta_fun <- function (y, mu, phis, eta_zi) {
+    sigma <- exp(phis)
+    # binary indicator for y > 0
+    ind <- y > 0
+    # non-zero part
+    eta <- as.matrix(mu)
+    out <- eta
+    out[!ind, ] <- 0
+    out[ind, ] <- (log(y[ind]) - eta[ind, ]) / sigma^2
+    out
+  }
+  score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
+    ind <- y > 0
+    probs <- plogis(as.matrix(eta_zi))
+    out <- 1 - probs
+    out[ind, ] <- - probs[ind, ]
+    out
+  }
+  score_phis_fun <- function (y, mu, phis, eta_zi) {
+    sigma <- exp(phis)
+    # binary indicator for y > 0
+    ind <- y > 0
+    # non-zero part
+    eta <- as.matrix(mu)
+    out <- eta
+    out[!ind, ] <- 0
+    out[ind, ] <- - 1 + (log(y[ind]) - eta[ind, ])^2 / sigma^2
+    out
+  }
+  simulate <- function (n, mu, phis, eta_zi) {
+    y <- rnorm(n = n, mean = mu, sd = exp(phis))
+    y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
+    y
+  }
+  structure(list(family = "two-part log-normal", link = stats$name, 
+                 linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+                 score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
+                 score_phis_fun = score_phis_fun, simulate = simulate),
+            class = "family")
+}
+
+km1 <- mixed_model(y ~ sex * time, random = ~ 1 | id, data = DF, 
+                   family = hurdle.lognormal(), n_phis = 1,
+                   zi_fixed = ~ sex)
+
+km1
+
+km1 <- mixed_model(values ~ ind, random = ~ 1 | block, data = sp_stack, 
+                   family = hurdle.lognormal(), n_phis = 1)
+
+
+#https://stats.stackexchange.com/questions/339610/hurdle-model-with-non-zero-gaussian-distribution-in-r
+#https://stats.idre.ucla.edu/r/dae/tobit-models/

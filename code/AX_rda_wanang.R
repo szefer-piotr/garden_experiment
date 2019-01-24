@@ -1,6 +1,5 @@
 #Dataset preparation
-setwd("C:\\Users\\Piotr Szefer\\Desktop\\Work\\garden experiment\\datasets")
-dataset <- read.csv("main_biomass_wng_ohu.csv", sep="\t")
+dataset <- read.csv("datasets/supplementary/main_biomass_wng_ohu.csv")
 dataset$LOCATION <- substr(dataset$CODE, 1, 1)
 
 #Subsetting for Wanang
