@@ -163,30 +163,34 @@ fig1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1),
 
 # >>> FIG. 3 SPECIES LEVEL ANALYSIS----
 
-# make subsets
-
 # main and tree datasets
 comb <- expand.grid(unique(main$TREAT)[3], unique(main$TREAT))
 comb <- comb[-which(comb[,1] == comb[,2]),]
 
+# >> data summary -----
 # I will focus only on the tree species as suggsted by ordination graph
+# All data subsets. Analyse relative proportion of each species in the community,
+# and not the absolute biomass. In that case all of these will simply decrease.
 
-# for (comb_no in 1:5){
-#  
-# }
+cvst <- list()            # for most abundant species comparisons
+unique_spec <- list()     # unique species datasets
+pair_comp <- list()       # community comparisons RDA - trees
+pair_comp_treat <- list() # treatments
 
+# Relative abundance data
+ratree <- tree[order(tree$CODE), ]
+ratree$WEIGHT <-  stack(tapply(tree$WEIGHT, tree$CODE, function(x){x/sum(x)}))$value
 
-# All data sub_set!
-cvst <- list() # for most abundant species comparisons
-unique_spec <- list() # unique species datasets
-pair_comp <- list() # community comparisons RDA - trees
-pair_comp_treat <- list()
+# test (any plot code should show same species)
+# code <- "WG2P2"
+# a <- ratree[ratree$CODE == code, c("WEIGHT","SP_CODE")]
+# b <-   tree[  tree$CODE == code, c("WEIGHT","SP_CODE")]
+# plot(a$WEIGHT~b$WEIGHT)
 
-comb_no <-1
-
+#comb_no <- 2
 for (comb_no in 1:dim(comb)[1]){
   # step 1 subset the dataset to a given pair of treatments
-  subset <- tree[tree$TREAT %in% c(as.character(comb[comb_no,]$Var1), #control
+  subset <- ratree[ratree$TREAT %in% c(as.character(comb[comb_no,]$Var1), #control
                                    as.character(comb[comb_no,]$Var2)), ]
   
   # subset_main <- main[main$TREAT %in% c(as.character(comb[comb_no,]$Var1), 
@@ -195,11 +199,15 @@ for (comb_no in 1:dim(comb)[1]){
   usp_name_list <- paste(comb[comb_no,]$Var1,
                          comb[comb_no,]$Var2, sep="_")
   
-  pair_comp[[usp_name_list]] <- contingencyTable2(subset, "SP_CODE", "CODE","WEIGHT")
-  treats <- subset[, c("CODE", "BLOCK","TREAT")]
-  pair_comp_treat[[usp_name_list]] <- treats[!duplicated(treats),] #Alll plots with their treatments.
+  ct_sub <- contingencyTable2(subset, "CODE","SP_CODE", "WEIGHT")
+  rowSums(ct_sub)
   
-  # subset_RDA_main <- contingencyTable2(subset_main, "SP_CODE", "CODE","WEIGHT")
+  pair_comp[[usp_name_list]] <- (ct_sub)
+  
+  treats <- subset[, c("CODE", "BLOCK","TREAT")]
+  pair_comp_treat[[usp_name_list]] <- treats[!duplicated(treats),] #All plots with their treatments.
+  
+  # convert weights into relative weights
   
   # step 2 most often occuring species present in both
   sub_table <- table(subset$SP_CODE, subset$TREAT)
@@ -208,10 +216,19 @@ for (comb_no in 1:dim(comb)[1]){
   sp_present <- sub_table[,c(comb[comb_no,]$Var1,comb[comb_no,]$Var2)]
   sp_present <- sp_present[rowSums(sp_present) != 0, ]
   
-  entry <- list(unique_treat = which(sp_present[,1] == 0),# zero at treatment
-       unique_con = which(sp_present[,2] == 0)) # zero at control
+  entry <- list(which(sp_present[,1] == 0), # zero at treatment
+                which(sp_present[,2] == 0)) # zero at control
   
-  unique_spec[[usp_name_list]] <- entry
+  unique_species_biomass1 <- pair_comp[[usp_name_list]][, names(entry[[1]])]
+  unique_species_biomass2 <- pair_comp[[usp_name_list]][, names(entry[[2]])]
+  
+  u_entry <- list(unique_species_biomass1,
+                  unique_species_biomass2)
+  
+  names(u_entry) <- c(colnames(sp_present)[1],colnames(sp_present)[2])
+  
+  unique_spec[[usp_name_list]] <- u_entry
+  
   #tree_ct <- contingencyTable2(tree, "SP_CODE", "TREAT", "WEIGHT")
   
   # Which species occur at leas "threshold" times
@@ -476,45 +493,58 @@ selected_subset$SP_CODE <- as.character(selected_subset$SP_CODE)
 selected_subset$TREAT <- as.character(selected_subset$TREAT)
 table(selected_subset$SP_CODE, selected_subset$TREAT)
 
-## RDA once again -----
+## >>> FIG X. RDA once again -----
 
-#instead of kg If I use grams 
+# instead of kg If I use grams, doesnt matter. What I want are the proportions!!!
+# relative distributions!
 library(vegan)
-plot(rda(log(1000*pair_comp[[1]]+1))) #whoaaaaaat?!
 
+# Rda with relative abundances
 ct_main <- contingencyTable2(main, "CODE","SP_CODE", "WEIGHT")
-plot(rda(log(1000*ct_main+1)~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test))
+relative_abundances <- ct_main/rowSums(ct_main)
 
+# Order the test dataset
+test <- test[rownames(relative_abundances), ]
+
+m <- rda(log(ct_main/rowSums(ct_main) +1)~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test)
+anova(m, by="terms", permutations = 999)
+plot(m)
+
+# >> Pairwise comparisons of the community structure RDA -----
 ds_num <- 5
-m1 <- rda(t(log(pair_comp[[ds_num]]+1))~TREAT, data = pair_comp_treat[[ds_num]])
-anova(m1, by="terms", permutations = 999)
+
+dts <- t(pair_comp[[ds_num]])
+radts <- dts/rowSums(dts)
+
+# Order the test dataset
+ratest <- pair_comp_treat[[ds_num]]
+rownames(ratest) = ratest$CODE
+ratest <- ratest[rownames(radts), ]
+
+m1 <- rda(log(radts+1)~TREAT+Condition(BLOCK), data = ratest)
+anova(m1, by="terms", permutations = 9999)
 plot(m1)
 
-dim(pair_comp[[1]])
-
-# dominance plots ----
-ds_num <- 5
-
-ds <- log(pair_comp[[ds_num]]+1) # logged values
+# >> dominance plots ----
+radts <- log(radts+1) # logged values
 # ds <- log(1000*pair_comp[[ds_num]]+1) # logged grams
 # ds <- pair_comp[[ds_num]] # raw
 
-trt <- pair_comp_treat[[ds_num]]
-trt_a <-unique(trt$TREAT)[1]
-trt_b <-unique(trt$TREAT)[2]
+trt_a <-unique(ratest$TREAT)[1]
+trt_b <-unique(ratest$TREAT)[2]
 
-ds_a <- ds[, trt$TREAT == trt_a]
-ds_b <- ds[, trt$TREAT == trt_b]
+ds_a <- radts[ratest$TREAT == trt_a, ]
+ds_b <- radts[ratest$TREAT == trt_b, ]
 
 par(mfrow = c(1,2))
 
 ds_a[ds_a == 0] <- NA
-lineup <- order(rowSums(ds_a, na.rm = T))
-boxplot(t(ds_a[rev(lineup), ]), main = trt_a, las=2)
+lineup <- order(colSums(ds_a, na.rm = T))
+boxplot(ds_a[, rev(lineup)], main = trt_a, las=2)
 
 ds_b[ds_b == 0] <- NA
-lineup <- order(rowSums(ds_b, na.rm = T))
-boxplot(t(ds_b[rev(lineup), ]), main = trt_b, las=2)
+lineup <- order(colSums(ds_b, na.rm = T))
+boxplot(ds_b[, rev(lineup)], main = trt_b, las=2)
 
 
 
@@ -526,111 +556,111 @@ boxplot(t(ds_b[rev(lineup), ]), main = trt_b, las=2)
 # vignette:
 #https://cloud.r-project.org/web/packages/GLMMadaptive/vignettes/ZeroInflated_and_TwoPart_Models.html
 
-library(GLMMadaptive)
-
-
-set.seed(1234)
-n <- 100 # number of subjects
-K <- 8 # number of measurements per subject
-t_max <- 5 # maximum follow-up time
-
-# we constuct a data frame with the design: 
-# everyone has a baseline measurment, and then measurements at random follow-up times
-DF <- data.frame(id = rep(seq_len(n), each = K),
-                 time = c(replicate(n, c(0, sort(runif(K - 1, 0, t_max))))),
-                 sex = rep(gl(2, n/2, labels = c("male", "female")), each = K))
-
-# design matrices for the fixed and random effects non-zero part
-X <- model.matrix(~ sex * time, data = DF)
-Z <- model.matrix(~ time, data = DF)
-# design matrices for the fixed and random effects zero part
-X_zi <- model.matrix(~ sex, data = DF)
-Z_zi <- model.matrix(~ 1, data = DF)
-
-betas <- c(-2.13, -0.25, 0.24, -0.05) # fixed effects coefficients non-zero part
-sigma <- 0.5 # standard deviation error terms non-zero part
-gammas <- c(-1.5, 0.5) # fixed effects coefficients zero part
-D11 <- 0.5 # variance of random intercepts non-zero part
-D22 <- 0.1 # variance of random slopes non-zero part
-D33 <- 0.4 # variance of random intercepts zero part
-
-# we simulate random effects
-b <- cbind(rnorm(n, sd = sqrt(D11)), rnorm(n, sd = sqrt(D22)), rnorm(n, sd = sqrt(D33)))
-# linear predictor non-zero part
-eta_y <- as.vector(X %*% betas + rowSums(Z * b[DF$id, 1:2, drop = FALSE]))
-# linear predictor zero part
-eta_zi <- as.vector(X_zi %*% gammas + rowSums(Z_zi * b[DF$id, 3, drop = FALSE]))
-# we simulate log-normal longitudinal data
-DF$y <- exp(rnorm(n * K, mean = eta_y, sd = sigma))
-# we set the zeros from the logistic regression
-DF$y[as.logical(rbinom(n * K, size = 1, prob = plogis(eta_zi)))] <- 0
-
-hurdle.lognormal <- function () {
-  stats <- make.link("identity")
-  log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
-    sigma <- exp(phis)
-    # binary indicator for y > 0
-    ind <- y > 0
-    # non-zero part
-    eta <- as.matrix(eta)
-    eta_zi <- as.matrix(eta_zi)
-    out <- eta
-    out[ind, ] <- plogis(eta_zi[ind, ], lower.tail = FALSE, log.p = TRUE) + 
-      dnorm(x = log(y[ind]), mean = eta[ind, ], sd = sigma, log = TRUE)
-    # zero part
-    out[!ind, ] <- plogis(eta_zi[!ind, ], log.p = TRUE)
-    attr(out, "mu_y") <- eta
-    out
-  }
-  score_eta_fun <- function (y, mu, phis, eta_zi) {
-    sigma <- exp(phis)
-    # binary indicator for y > 0
-    ind <- y > 0
-    # non-zero part
-    eta <- as.matrix(mu)
-    out <- eta
-    out[!ind, ] <- 0
-    out[ind, ] <- (log(y[ind]) - eta[ind, ]) / sigma^2
-    out
-  }
-  score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
-    ind <- y > 0
-    probs <- plogis(as.matrix(eta_zi))
-    out <- 1 - probs
-    out[ind, ] <- - probs[ind, ]
-    out
-  }
-  score_phis_fun <- function (y, mu, phis, eta_zi) {
-    sigma <- exp(phis)
-    # binary indicator for y > 0
-    ind <- y > 0
-    # non-zero part
-    eta <- as.matrix(mu)
-    out <- eta
-    out[!ind, ] <- 0
-    out[ind, ] <- - 1 + (log(y[ind]) - eta[ind, ])^2 / sigma^2
-    out
-  }
-  simulate <- function (n, mu, phis, eta_zi) {
-    y <- rnorm(n = n, mean = mu, sd = exp(phis))
-    y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
-    y
-  }
-  structure(list(family = "two-part log-normal", link = stats$name, 
-                 linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
-                 score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
-                 score_phis_fun = score_phis_fun, simulate = simulate),
-            class = "family")
-}
-
-km1 <- mixed_model(y ~ sex * time, random = ~ 1 | id, data = DF, 
-                   family = hurdle.lognormal(), n_phis = 1,
-                   zi_fixed = ~ sex)
-
-km1
-
-km1 <- mixed_model(values ~ ind, random = ~ 1 | block, data = sp_stack, 
-                   family = hurdle.lognormal(), n_phis = 1)
+# library(GLMMadaptive)
+# 
+# 
+# set.seed(1234)
+# n <- 100 # number of subjects
+# K <- 8 # number of measurements per subject
+# t_max <- 5 # maximum follow-up time
+# 
+# # we constuct a data frame with the design: 
+# # everyone has a baseline measurment, and then measurements at random follow-up times
+# DF <- data.frame(id = rep(seq_len(n), each = K),
+#                  time = c(replicate(n, c(0, sort(runif(K - 1, 0, t_max))))),
+#                  sex = rep(gl(2, n/2, labels = c("male", "female")), each = K))
+# 
+# # design matrices for the fixed and random effects non-zero part
+# X <- model.matrix(~ sex * time, data = DF)
+# Z <- model.matrix(~ time, data = DF)
+# # design matrices for the fixed and random effects zero part
+# X_zi <- model.matrix(~ sex, data = DF)
+# Z_zi <- model.matrix(~ 1, data = DF)
+# 
+# betas <- c(-2.13, -0.25, 0.24, -0.05) # fixed effects coefficients non-zero part
+# sigma <- 0.5 # standard deviation error terms non-zero part
+# gammas <- c(-1.5, 0.5) # fixed effects coefficients zero part
+# D11 <- 0.5 # variance of random intercepts non-zero part
+# D22 <- 0.1 # variance of random slopes non-zero part
+# D33 <- 0.4 # variance of random intercepts zero part
+# 
+# # we simulate random effects
+# b <- cbind(rnorm(n, sd = sqrt(D11)), rnorm(n, sd = sqrt(D22)), rnorm(n, sd = sqrt(D33)))
+# # linear predictor non-zero part
+# eta_y <- as.vector(X %*% betas + rowSums(Z * b[DF$id, 1:2, drop = FALSE]))
+# # linear predictor zero part
+# eta_zi <- as.vector(X_zi %*% gammas + rowSums(Z_zi * b[DF$id, 3, drop = FALSE]))
+# # we simulate log-normal longitudinal data
+# DF$y <- exp(rnorm(n * K, mean = eta_y, sd = sigma))
+# # we set the zeros from the logistic regression
+# DF$y[as.logical(rbinom(n * K, size = 1, prob = plogis(eta_zi)))] <- 0
+# 
+# hurdle.lognormal <- function () {
+#   stats <- make.link("identity")
+#   log_dens <- function (y, eta, mu_fun, phis, eta_zi) {
+#     sigma <- exp(phis)
+#     # binary indicator for y > 0
+#     ind <- y > 0
+#     # non-zero part
+#     eta <- as.matrix(eta)
+#     eta_zi <- as.matrix(eta_zi)
+#     out <- eta
+#     out[ind, ] <- plogis(eta_zi[ind, ], lower.tail = FALSE, log.p = TRUE) + 
+#       dnorm(x = log(y[ind]), mean = eta[ind, ], sd = sigma, log = TRUE)
+#     # zero part
+#     out[!ind, ] <- plogis(eta_zi[!ind, ], log.p = TRUE)
+#     attr(out, "mu_y") <- eta
+#     out
+#   }
+#   score_eta_fun <- function (y, mu, phis, eta_zi) {
+#     sigma <- exp(phis)
+#     # binary indicator for y > 0
+#     ind <- y > 0
+#     # non-zero part
+#     eta <- as.matrix(mu)
+#     out <- eta
+#     out[!ind, ] <- 0
+#     out[ind, ] <- (log(y[ind]) - eta[ind, ]) / sigma^2
+#     out
+#   }
+#   score_eta_zi_fun <- function (y, mu, phis, eta_zi) {
+#     ind <- y > 0
+#     probs <- plogis(as.matrix(eta_zi))
+#     out <- 1 - probs
+#     out[ind, ] <- - probs[ind, ]
+#     out
+#   }
+#   score_phis_fun <- function (y, mu, phis, eta_zi) {
+#     sigma <- exp(phis)
+#     # binary indicator for y > 0
+#     ind <- y > 0
+#     # non-zero part
+#     eta <- as.matrix(mu)
+#     out <- eta
+#     out[!ind, ] <- 0
+#     out[ind, ] <- - 1 + (log(y[ind]) - eta[ind, ])^2 / sigma^2
+#     out
+#   }
+#   simulate <- function (n, mu, phis, eta_zi) {
+#     y <- rnorm(n = n, mean = mu, sd = exp(phis))
+#     y[as.logical(rbinom(n, 1, plogis(eta_zi)))] <- 0
+#     y
+#   }
+#   structure(list(family = "two-part log-normal", link = stats$name, 
+#                  linkfun = stats$linkfun, linkinv = stats$linkinv, log_dens = log_dens,
+#                  score_eta_fun = score_eta_fun, score_eta_zi_fun = score_eta_zi_fun,
+#                  score_phis_fun = score_phis_fun, simulate = simulate),
+#             class = "family")
+# }
+# 
+# km1 <- mixed_model(y ~ sex * time, random = ~ 1 | id, data = DF, 
+#                    family = hurdle.lognormal(), n_phis = 1,
+#                    zi_fixed = ~ sex)
+# 
+# km1
+# 
+# km1 <- mixed_model(values ~ ind, random = ~ 1 | block, data = sp_stack, 
+#                    family = hurdle.lognormal(), n_phis = 1)
 
 
 #https://stats.stackexchange.com/questions/339610/hurdle-model-with-non-zero-gaussian-distribution-in-r
