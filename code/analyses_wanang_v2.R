@@ -278,42 +278,78 @@ stacked_cvst <- stacked_cvst[stacked_cvst$type != "CONTROL_FUNGICIDE_TREMOR", ]
 # library(cplm)
 # colours <- c()
 
-# for (name in 1:length(names(cvst))){
-  sp_data <- cvst[[name]]
-  
-  # Add one and se
-  
-  print(names(cvst)[[name]])
-  #sp_data <- 1000*cvst[[nm]]
-  sp_stack <- stack(as.data.frame(sp_data))
-  sp_stack$block <- rownames(sp_data)
-
-f0 <- cpglmm(log(values+1)~(1|block),
-             sigma = ind, data = sp_stack)
-  f1 <- cpglmm(log(values+1)~ind+ (1|block),
-               data = sp_stack)
-  pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
-  print(pval)
-  colours <- c(colours, "black")
-  if (pval <= 0.05){
-    colours <- c(colours, "red")
-  } else {
-    colours <- c(colours, "grey30")
-      }
-# }
+# # for (name in 1:length(names(cvst))){
+#   sp_data <- cvst[[name]]
+#   
+#   # Add one and se
+#   
+#   print(names(cvst)[[name]])
+#   #sp_data <- 1000*cvst[[nm]]
+#   sp_stack <- stack(as.data.frame(sp_data))
+#   sp_stack$block <- rownames(sp_data)
+# 
+# f0 <- cpglmm(log(values+1)~(1|block),
+#              sigma = ind, data = sp_stack)
+#   f1 <- cpglmm(log(values+1)~ind+ (1|block),
+#                data = sp_stack)
+#   pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
+#   print(pval)
+#   colours <- c(colours, "black")
+#   if (pval <= 0.05){
+#     colours <- c(colours, "red")
+#   } else {
+#     colours <- c(colours, "grey30")
+#       }
+# # }
 
 
 # using classic mixed effect models
 colours <- c()
 
-library(caret)
+library(car)
+library(brms)
 
-for (name in 1:length(names(cvst))){
+name <- 18
+#for (name in 1:length(names(cvst))){
   sp_data <- cvst[[name]]
   print(names(cvst)[[name]])
   #sp_data <- 1000*cvst[[nm]]
   sp_stack <- stack(as.data.frame(sp_data))
   sp_stack$block <- rownames(sp_data)
+  
+  # If I want to use zero inflated beta, should I also 
+  # add blocks where species wasn't present? If it is not present in 
+  # a block then there is no information from that? Or is it?
+  
+  # m0 <- brm(values~(1|block), family=zero_inflated_beta(),
+  #            data = sp_stack)
+  
+  m1 <- brm(values~ ind + (1|block), family=zero_inflated_beta(),
+            data = sp_stack)
+  
+  # compare_ic(waic(m0), waic(m1), ic = "waic")
+  
+  pred1 <- sp_stack %>% 
+    tidybayes::add_predicted_draws(m1, n = 1000) %>%
+    filter(ind == unique(sp_stack$ind)[1])
+  
+  pred2 <- sp_stack %>% 
+    tidybayes::add_predicted_draws(m1, n = 1000) %>%
+    filter(ind == unique(sp_stack$ind)[2])
+  
+  # Difference between posterior distributions
+  sum((pred1$.prediction - pred2$.prediction) > 0.05)/length(pred1$.prediction)
+  
+  # sph <- stanplot(m1, type = "hist", pars="^b_")
+  # sph$data
+  # 
+  sp_stack %>% 
+    tidybayes::add_predicted_draws(m1, n = 1000) %>%
+    ggplot(aes(y = logit(.prediction), x = ind, group = block, fill=block, color = block)) + 
+    geom_jitter(alpha = 0.5) + 
+    geom_point(aes(y = logit(values), x = ind), size = 3, alpha = 0.1,
+               color = "grey50") + 
+    theme_bw()
   
   # Test for heteroscedasticity
   
