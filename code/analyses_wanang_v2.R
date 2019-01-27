@@ -5,6 +5,8 @@ library(lme4)
 library(lmerTest)
 library(Hmisc) #for the stat_summary plots
 library(brms)
+library(car)
+library(brms)
 
 
 contingencyTable2 <- function(dataset, ROW, COL, VALUE){
@@ -256,18 +258,25 @@ stacked_cvst <- data.frame()
 
 for (i in 1:length(names(cvst))){
   nm <- names(cvst)[i]
+  splitted <- strsplit(nm, "_") 
+  str1 <- substr(splitted[[1]][1], 1, 1)
+  str2 <- substr(splitted[[1]][2], 1, 1)
+  if (splitted[[1]][2] == "WEEVIL125"){str2 <- "H2"}
+  if (splitted[[1]][2] == "WEEVIL25"){str2 <- "H1"}
+  comb <- paste(str1, str2,
+                sep=" vs ")
+  spec <- splitted[[1]][3]
   sp_data <- cvst[[nm]]
   #sp_data <- 1000*cvst[[nm]]
   sp_stack <- stack(as.data.frame(sp_data))
   sp_stack$block <- rownames(sp_data)
   sp_stack$type <- nm
+  sp_stack$comb <- comb
+  sp_stack$spec <- spec
   stacked_cvst <- rbind(stacked_cvst, sp_stack)
 }
 
-# convert to grams
-
-# diff <- log(sp_data[,1]+1) - log(sp_data[,2]+1)
-# t.test(diff)
+stacked_cvst
 
 #get rid of TREMOR form the comparisons
 stacked_cvst <- stacked_cvst[stacked_cvst$type != "CONTROL_FUNGICIDE_TREMOR", ]
@@ -306,11 +315,8 @@ stacked_cvst <- stacked_cvst[stacked_cvst$type != "CONTROL_FUNGICIDE_TREMOR", ]
 # using classic mixed effect models
 colours <- c()
 
-library(car)
-library(brms)
-
-name <- 18
-#for (name in 1:length(names(cvst))){
+# name <- 19
+for (name in 1:length(names(cvst))){
   sp_data <- cvst[[name]]
   print(names(cvst)[[name]])
   #sp_data <- 1000*cvst[[nm]]
@@ -324,49 +330,86 @@ name <- 18
   # m0 <- brm(values~(1|block), family=zero_inflated_beta(),
   #            data = sp_stack)
   
-  m1 <- brm(values~ ind + (1|block), family=zero_inflated_beta(),
-            data = sp_stack)
+  # Zero inflated beta
+  # m1 <- brm(values~ ind + (1|block), family=zero_inflated_beta(),
+  #           data = sp_stack)
   
+  # lt <- sp_stack
+  # lt$values <- log((lt$values)/(1-lt$values))
+  # lt$values
+  # 
   # compare_ic(waic(m0), waic(m1), ic = "waic")
   
-  pred1 <- sp_stack %>% 
-    tidybayes::add_predicted_draws(m1, n = 1000) %>%
-    filter(ind == unique(sp_stack$ind)[1])
-  
-  pred2 <- sp_stack %>% 
-    tidybayes::add_predicted_draws(m1, n = 1000) %>%
-    filter(ind == unique(sp_stack$ind)[2])
+  # pred1 <- sp_stack %>% 
+  #   tidybayes::add_predicted_draws(m1, n = 1000) %>%
+  #   filter(ind == unique(sp_stack$ind)[1])
+  # 
+  # pred2 <- sp_stack %>% 
+  #   tidybayes::add_predicted_draws(m1, n = 1000) %>%
+  #   filter(ind == unique(sp_stack$ind)[2])
   
   # Difference between posterior distributions
-  sum((pred1$.prediction - pred2$.prediction) > 0.05)/length(pred1$.prediction)
+  
+  # hist(pred1$.prediction, breaks = 150)
+  # hist(pred2$.prediction, breaks = 150, add=T)
+  # 
+  # sum(pred1$.prediction - pred2$.prediction < 0)/length(pred1$.prediction)
+  # 
+  # sum((pred1$.prediction - pred2$.prediction) > 0.05)/length(pred1$.prediction)
   
   # sph <- stanplot(m1, type = "hist", pars="^b_")
   # sph$data
   # 
-  sp_stack %>% 
-    tidybayes::add_predicted_draws(m1, n = 1000) %>%
-    ggplot(aes(y = logit(.prediction), x = ind, group = block, fill=block, color = block)) + 
-    geom_jitter(alpha = 0.5) + 
-    geom_point(aes(y = logit(values), x = ind), size = 3, alpha = 0.1,
-               color = "grey50") + 
-    theme_bw()
+  # sp_stack %>% 
+  #   tidybayes::add_predicted_draws(m1, n = 1000) %>%
+  #   ggplot(aes(y = logit(.prediction), x = ind, group = block, fill=block, color = block)) + 
+  #   geom_jitter(alpha = 0.5) + 
+  #   geom_point(aes(y = logit(values), x = ind), size = 3, alpha = 0.1,
+  #              color = "grey50") + 
+  #   theme_bw()
   
   # Test for heteroscedasticity
   
-  ltest <- leveneTest(values~ind, data=sp_stack)
+  # Differences and paired-t-test
   
-  print(ltest)
+  # ltest <- leveneTest(values~ind, data=sp_stack)
+  # 
+  # print(ltest)
+  # 
+  # qqnorm(sp_stack$values)
+  # qqline(sp_stack$values)
+  # 
+  # Paired t test
+  res <- t.test(sp_data[,1],sp_data[,2],paired = TRUE, alternative = "two.sided")
   
+  pval <- res$p.value 
+  print(pval)
+  
+  # Paired t test logit
+  sp_logit <- log(sp_data/(1-sp_data))
+  sp_logit[sp_logit == -Inf] <- 0
+  sp_logit[sp_logit == Inf] <- 0
+  
+  boxplot(sp_logit)
+  
+  res <- t.test(sp_logit[,1],sp_logit[,2],paired = TRUE, alternative = "two.sided")
+  
+  pval <- res$p.value 
+  print(pval)
+  
+  # qqnorm(sp_logit)
+  # qqline(sp_logit)
+  # 
   # valuesBCMod <- caret::BoxCoxTrans(sp_stack$values+1)
   # sp_stack$values <- predict(valuesBCMod, 
   #                            sp_stack$values)
   
-  f0 <- lmer(log(values+1)~(1|block),
-             data = sp_stack)
-  f1 <- lmer(log(values+1)~ind+ (1|block),
-               data = sp_stack)
-  pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
-  print(pval)
+  # f0 <- lmer(log(values+1)~(1|block),
+  #            data = sp_stack)
+  # f1 <- lmer(log(values+1)~ind+ (1|block),
+  #              data = sp_stack)
+  # pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
+  # print(pval)
   colours <- c(colours, "black")
   if (pval <= 0.05){
     colours <- c(colours, "red")
@@ -419,13 +462,34 @@ p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1), group=block)) +
   geom_point(size = 1.7) + theme_bw()
 
 # raw
+
+# p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
+#   geom_line(aes(linetype = block), size = 1, alpha=0.15) +
+#   facet_wrap(comb ~ spec, scales = "free", nrow=5, ncol =4) +
+#   geom_point(cex = 4) + theme_bw() + 
+#   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
+#         strip.text = element_text(size=20),
+#         legend.justification=c(0.5,0.5), 
+#         legend.position="bottom")+
+#   xlab("") + 
+#   ylab("")
+# p1
+
+png("figs/fig3.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
-  geom_line(aes(linetype = block), size = 0.5, alpha=0.15) +
-  facet_wrap(~type, scales = "free", nrow=5, ncol =4) +
-  geom_point(size = 1.7) + theme_bw()
-
-
+  geom_line(aes(linetype = block), size = 3, alpha=0.15) +
+  facet_grid(spec ~ comb, scales = "free") +
+  geom_point(cex = 6) + theme_bw() + 
+  theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
+        axis.text.y=element_text(angle=0, size=20, hjust=0.5),
+        strip.text = element_text(size=20),
+        legend.justification=c(0.5,0.5), 
+        legend.position="bottom")+
+  xlab("") + 
+  ylab("")
 p1
+dev.off()
 
 # summaries, but these go below zero!
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1))) +
