@@ -71,7 +71,7 @@ for (col in 1:6){
 
 # Main plot
 plot(RDA1d, display = "sites", type = "n", 
-     xlab = "RDA1 [12.56%]", ylab="RDA2 [4.41%]") 
+     xlab = "RDA1 [???%]", ylab="RDA2 [???%]") 
 #xlim = c(-5, 5), ylim = c(-5,5))
 points(RDA1d, pch = pointChars , cex = 1.5, col = colors, lwd = 2)
 text(RDA1d, display="bp", lwd = 2,col = c(cols[2], cols[6],
@@ -86,6 +86,10 @@ legend('bottomright', c("CONTROL", "FUNGICIDE", "HERBIVORY lev. 1",
 
 
 ##### GOODNESS OF FIT ANALYSIS
+RDA1d <- RDAall
+RDA1d <- RDAtree
+
+
 plot(RDA1d, display = "species", type = "n", scaling = 2.5) 
 text(RDA1d, display="bp", lwd = 2,col = c(cols[2], cols[6],
                                           cols[5], cols[3],

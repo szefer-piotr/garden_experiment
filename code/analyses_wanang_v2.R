@@ -7,7 +7,8 @@ library(Hmisc) #for the stat_summary plots
 library(brms)
 library(car)
 library(brms)
-
+library(vegan)
+library(MASS)
 
 contingencyTable2 <- function(dataset, ROW, COL, VALUE){
   # Get rid of the empty factors
@@ -78,7 +79,14 @@ summary(bio_rbl)
 spn_rbl <- lmer(SPEC_NO ~ TREAT + (1|GARDEN),
                 data = test)
 
+spn_rbl2 <- glmer(SPEC_NO ~ TREAT + (1|GARDEN),
+                 data = test, family = "poisson")
+
+
+AIC(spn_rbl, spn_rbl2)
+summary(spn_rbl2)
 summary(spn_rbl)
+
 
 # Diversity
 div_rbl <- lmer(SW ~ TREAT + (1|GARDEN),
@@ -315,6 +323,11 @@ stacked_cvst <- stacked_cvst[stacked_cvst$type != "CONTROL_FUNGICIDE_TREMOR", ]
 # using classic mixed effect models
 colours <- c()
 
+# Order cvst alphabetically
+cvst <- cvst[order(names(cvst))]
+
+par(mfrow = c(1,1))
+
 # name <- 19
 for (name in 1:length(names(cvst))){
   sp_data <- cvst[[name]]
@@ -381,21 +394,25 @@ for (name in 1:length(names(cvst))){
   # 
   # Paired t test
   res <- t.test(sp_data[,1],sp_data[,2],paired = TRUE, alternative = "two.sided")
-  
-  pval <- res$p.value 
+  pval <- res$p.value
   print(pval)
+  
+  # Sined rank test
+  # res <- wilcox.test(sp_data[,1],sp_data[,2], paired=TRUE)
+  # pval <- res$p.value 
+  # print(pval)
   
   # Paired t test logit
-  sp_logit <- log(sp_data/(1-sp_data))
-  sp_logit[sp_logit == -Inf] <- 0
-  sp_logit[sp_logit == Inf] <- 0
-  
-  boxplot(sp_logit)
-  
-  res <- t.test(sp_logit[,1],sp_logit[,2],paired = TRUE, alternative = "two.sided")
-  
-  pval <- res$p.value 
-  print(pval)
+  # sp_logit <- log(sp_data/(1-sp_data))
+  # sp_logit[sp_logit == -Inf] <- 0
+  # sp_logit[sp_logit == Inf] <- 0
+  # 
+  # #boxplot(sp_logit, main=names(cvst)[[name]])
+  # 
+  # res <- t.test(sp_logit[,1],sp_logit[,2],paired = TRUE, alternative = "two.sided")
+  # 
+  # pval <- res$p.value
+  # print(pval)
   
   # qqnorm(sp_logit)
   # qqline(sp_logit)
@@ -456,10 +473,10 @@ for (name in 1:length(names(cvst))){
 # actuall plot ------
 
 # lines log +1
-p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1), group=block)) +
-  geom_line(aes(linetype = block), size = 0.5, alpha=0.15) +
-  facet_wrap(~type, scales = "free", nrow=5, ncol =4) +
-  geom_point(size = 1.7) + theme_bw()
+# p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1), group=block)) +
+#   geom_line(aes(linetype = block), size = 0.5, alpha=0.15) +
+#   facet_wrap(~type, scales = "free", nrow=5, ncol =4) +
+#   geom_point(size = 1.7) + theme_bw()
 
 # raw
 
@@ -476,7 +493,7 @@ p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1), group=block)) +
 #   ylab("")
 # p1
 
-png("figs/fig3.png",width=1200, height = 1200)
+#png("figs/fig3.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   geom_line(aes(linetype = block), size = 3, alpha=0.15) +
   facet_grid(spec ~ comb, scales = "free") +
@@ -489,16 +506,35 @@ p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   xlab("") + 
   ylab("")
 p1
-dev.off()
+#dev.off()
 
 # summaries, but these go below zero!
-p1 <- ggplot(stacked_cvst, aes(x = ind, y= log(values+1))) +
+
+png("figs/fig3sig.png",width=800, height = 800)
+p1 <- ggplot(stacked_cvst, aes(x = ind, y= values)) +
   facet_wrap(~type, scales = "free", ncol=4, nrow=5) +
   geom_point(size = 3, col = "grey80") + theme_bw()
 
 p1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
                 geom="errorbar", color =colours, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color =colours, cex = 5)
+dev.off()
+
+stacked_cvst_logit <- stacked_cvst
+stacked_cvst_logit$values <- log(stacked_cvst_logit$values/(1-stacked_cvst_logit$values))
+stacked_cvst_logit$values[stacked_cvst_logit$values == -Inf] <- 0
+
+qqnorm(stacked_cvst_logit$values)
+qqline(stacked_cvst_logit$values)
+
+p1 <- ggplot(stacked_cvst_logit, aes(x = ind, y= values)) +
+  facet_wrap(~type, scales = "free", ncol=4, nrow=5) +
+  geom_point(size = 3, col = "grey80") + theme_bw()
+
+p1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+                  geom="errorbar", color =colours, width=0.2, lwd=1.5) +
+  stat_summary(fun.y=mean, geom="point", color =colours, cex = 5)
+
 
 # some good models for this?
 # tweedie continuous data?
@@ -597,7 +633,6 @@ table(selected_subset$SP_CODE, selected_subset$TREAT)
 
 # instead of kg If I use grams, doesnt matter. What I want are the proportions!!!
 # relative distributions!
-library(vegan)
 
 # Rda with relative abundances
 ct_main <- contingencyTable2(main, "CODE","SP_CODE", "WEIGHT")
@@ -765,3 +800,47 @@ boxplot(ds_b[, rev(lineup)], main = trt_b, las=2)
 
 #https://stats.stackexchange.com/questions/339610/hurdle-model-with-non-zero-gaussian-distribution-in-r
 #https://stats.idre.ucla.edu/r/dae/tobit-models/
+
+# Description of the comunity ----
+
+# most abundant species
+mainC <- main[main$TREAT == "CONTROL", ]
+library(forcats)
+
+# png("figs/figS1.png",width=800, height = 400)
+p <- ggplot(mainC, aes(x = fct_reorder(SP_CODE, WEIGHT, fun = median, .desc =TRUE), 
+                 y = log(WEIGHT))) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 90, 
+                                                    hjust = 1,
+                                                    vjust = 0.5,
+                                                    size = 9)) +
+  scale_x_discrete(name="") +
+  scale_y_continuous(name="log[kg]") + 
+  ggtitle("Dominance structure of control plots")
+
+p
+# dev.off()
+
+# Melochia sp1 biomass
+exp(4.85957982)
+
+# Average biomass per plot:
+w <- as.vector(tapply(mainC$WEIGHT, mainC$CODE, sum, na.rm = TRUE))
+w <- w[!is.na(w)]
+summary(w)
+
+library(EnvStats)
+vals <- elnorm(w, ci=TRUE)
+names(vals)
+exp(vals$parameters[1])
+exp(3.846207)
+exp(4.971028)
+
+# Average BC values
+sp_data_c <- contingencyTable2(mainC, "SP_CODE", "CODE", "WEIGHT")
+summary(vegdist(t(sp_data_c), method="bray"))
+
+treeC <- tree[tree$TREAT == "CONTROL", ]
+sp_tree_c <- contingencyTable2(treeC, "SP_CODE", "CODE", "WEIGHT")
+mean(vegdist(t(sp_tree_c), method="bray"))
+
