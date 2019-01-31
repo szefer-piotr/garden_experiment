@@ -73,7 +73,11 @@ tree_test <- tree_test[rownames(tree_test) != "WG1P6", ]
 bio_rbl <- lmer(log(BIO) ~ TREAT + (1|GARDEN),
                 data = test) 
 
+bio_rbl_t <- lmer(logBio ~ TREATMENT + (1|GARDEN),
+                data = tree_test) 
+
 summary(bio_rbl)
+summary(bio_rbl_t)
 
 # Richness
 spn_rbl <- lmer(SPEC_NO ~ TREAT + (1|GARDEN),
@@ -170,6 +174,8 @@ fig1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1),
 # >>> FIG. 2 ----
 
 # cwm_analysis.R
+
+
 
 # >>> FIG. 3 SPECIES LEVEL ANALYSIS----
 
@@ -326,8 +332,10 @@ colours <- c()
 # Order cvst alphabetically
 cvst <- cvst[order(names(cvst))]
 
-par(mfrow = c(1,1))
+# par(mfrow = c(1,1))
 
+diff_dat <- data.frame()
+  
 # name <- 19
 for (name in 1:length(names(cvst))){
   sp_data <- cvst[[name]]
@@ -335,6 +343,15 @@ for (name in 1:length(names(cvst))){
   #sp_data <- 1000*cvst[[nm]]
   sp_stack <- stack(as.data.frame(sp_data))
   sp_stack$block <- rownames(sp_data)
+  
+  #treatment - control
+  dd <- data.frame(diftc = c(sp_data[,2] - sp_data[,1]), comp = names(cvst)[[name]])
+  diff_dat <- rbind(diff_dat, dd)
+  
+  # dd <- data.frame( nm = c(sp_data[,2] - sp_data[,1]))
+  # colnames(dd) <- names(cvst)[[name]]
+  # diff_dat <- cbind(diff_dat, dd)
+
   
   # If I want to use zero inflated beta, should I also 
   # add blocks where species wasn't present? If it is not present in 
@@ -428,6 +445,9 @@ for (name in 1:length(names(cvst))){
   # pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
   # print(pval)
   colours <- c(colours, "black")
+  if (pval <= 0.1){
+    colours <- c(colours, "orange")
+  }
   if (pval <= 0.05){
     colours <- c(colours, "red")
   } else {
@@ -435,7 +455,19 @@ for (name in 1:length(names(cvst))){
   }
 }
 
-
+# difference correlations
+# diff_dat
+# 
+# un <- unique(diff_dat$comp)
+# d_comb_i <- expand.grid(un[grep("INSECTICIDE", un)], un[grep("INSECTICIDE", un)])
+# d_comb_i <- d_comb_i[d_comb_i$Var1 != d_comb_i$Var2, ]
+# 
+# i <- 1
+# 
+# for(i in 1:nrow(d_comb_i)){
+#   one <- diff_dat[diff_dat$comp == d_comb_i[i,1], ]
+#   two <- diff_dat[diff_dat$comp == d_comb_i[i,2], ]
+# }
 
 # >>> FIG. 3. B using differences ----
 
