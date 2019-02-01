@@ -195,7 +195,9 @@ pair_comp_treat <- list() # treatments
 
 # Relative abundance data
 ratree <- tree[order(tree$CODE), ]
+ratree <- main[order(main$CODE), ] # for the whole community
 ratree$WEIGHT <-  stack(tapply(tree$WEIGHT, tree$CODE, function(x){x/sum(x)}))$value
+ratree$WEIGHT <-  stack(tapply(main$WEIGHT, main$CODE, function(x){x/sum(x)}))$value
 
 # test (any plot code should show same species)
 # code <- "WG2P2"
@@ -525,6 +527,19 @@ for (name in 1:length(names(cvst))){
 #   ylab("")
 # p1
 
+p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
+  geom_line(aes(linetype = block), size = 1, alpha=0.15) +
+  facet_grid(spec ~ comb, scales = "free") +
+  geom_point(cex = 2) + theme_bw() + 
+  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
+        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+        strip.text = element_text(size=10),
+        legend.justification=c(0.5,0.5), 
+        legend.position="bottom")+
+  xlab("") + 
+  ylab("")
+p1
+
 #png("figs/fig3.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   geom_line(aes(linetype = block), size = 3, alpha=0.15) +
@@ -668,14 +683,91 @@ table(selected_subset$SP_CODE, selected_subset$TREAT)
 
 # Rda with relative abundances
 ct_main <- contingencyTable2(main, "CODE","SP_CODE", "WEIGHT")
-relative_abundances <- ct_main/rowSums(ct_main)
+ra <- ct_main/rowSums(ct_main)
 
-# Order the test dataset
-test <- test[rownames(relative_abundances), ]
+# make dataset only for trees
+ct_tree <- contingencyTable2(tree, "CODE","SP_CODE", "WEIGHT")
+ra_tree <- ct_tree/rowSums(ct_tree)
 
-m <- rda(log(ct_main/rowSums(ct_main) +1)~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test)
+# Order and rename the test dataset
+test <- test[rownames(ra), ]
+names(test) <- c("SPEC_NO","SW","SIMP","EVEN","BIO","GARDEN","PLOT","PLOT_CODE","TREAT",
+                 "LOCATION","control","fungicide","herbivory_moderate","herbivory_high",
+                 "insecticide","predator_exclosure","DIST")
+
+# RDA models -----
+m <- rda(ra~fungicide+herbivory_moderate+herbivory_high+insecticide+predator_exclosure+Condition(GARDEN),
+         data=test, scale=FALSE)
+
+# m_ca <- cca(ra)
+# plot(m_ca, display = "sites")
+# m <- rda(relative_abundances~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test)
 anova(m, by="terms", permutations = 999)
-plot(m)
+anova(m, by="axis", permutations = 999)
+
+summary(m)
+
+coef(m)
+R2 <- RsquareAdj(m)$r.squared
+R2 
+ 
+# Check the effects for trees
+# test <- test[rownames(ra_tree), ]
+# mt <- rda(ra_tree~fungicide+herbivory_moderate+herbivory_high+insecticide+predator_exclosure+Condition(GARDEN),
+#          data=test)
+# # m <- rda(relative_abundances~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test)
+# anova(mt, by="terms", permutations = 999)
+# plot(mt)
+
+# # goodness of fit ----
+gof <- goodness(m, display = "species", statistic = "explained",
+         summarize = FALSE)
+gof2 <- inertcomp(m, display = "species", proportional = TRUE)
+
+specs <-sort(round(gof2[,1], 3), decreasing = T)
+selected <- names(specs[1:10])
+
+specs <-sort(round(gof[,1], 3), decreasing = T)
+selected <- names(specs[1:10])
+
+
+
+# actuall figure ----
+
+#https://www.fromthebottomoftheheap.net/2012/04/11/customising-vegans-ordination-plots/
+
+scl = 2
+#plot(m, scaling = scl)
+plot(m, type = "n", scaling = scl)
+colvec <- c(rgb(230,159,0, max=255), 
+            rgb(86,180,233, max=255), 
+            rgb(0,158,115, max=255), 
+            rgb(0,114,178, max=255), 
+            rgb(213,94,0, max=255), 
+            rgb(240,228,66, max=255))
+with(test, points(m, display = "sites", col = colvec[TREAT],
+                      scaling = scl, pch = 21, cex = 2, bg = colvec[TREAT]))
+# Species, but it is just a mess
+# text(m, display = "species", scaling = scl, cex = 0.8,
+#      col = rgb(1,1,1, max = 255, alpha=100))
+
+# Legend
+with(test, legend("topright", legend = levels(TREAT), bty = "n",
+                      col = colvec, pch = 21, pt.bg = colvec))
+text(m, display="bp", col="darkcyan", lwd=2)
+
+selection <- rownames(summary(m)$species) %in% selected
+orditorp(m, scaling = -1, 
+         display = "species", select = selection, col = "darkcyan")
+
+# orditkplot(m,scaling=scl, display = "species")
+
+# variance explained ----
+barplot(m$CA$eig/m$tot.chi, names.arg = 1:m$CA$rank, cex.names = 0.5, 
+        ylab="Proportion of variance explained", xlab="CA axis")
+m$CCA$tot.chi/m$tot.chi
+
+
 
 # >> Pairwise comparisons of the community structure RDA -----
 ds_num <- 5

@@ -1,5 +1,7 @@
 # Cwm analysis
 
+library(dplyr)
+
 # full community ----
 main <- read.table("datasets/wng_main_clean.txt", header = T) #506 rows
 
@@ -13,6 +15,7 @@ test <- tapply(main$WEIGHT, main$CODE,
 test <- stack(test)
 test$sla <- main$SLA # tutaj!
 test$ldmc <- main$LDMC
+test$herb <- main$HERB
 
 test$garden <- substr(test$ind, 1,3)
 test$plot <- substr(test$ind, 4,5)
@@ -25,14 +28,18 @@ for (row in 1:dim(test)[1]) {
 }
 
 # get cwm sla values
-names(test) <- c("prop", "code", "sla", "ldmc_logit", "garden","plot","treat")
+names(test) <- c("prop", "code", "sla", "ldmc_logit", "herb_logit", "garden","plot","treat")
 head(test)
 test$propsla <- test$prop * test$sla
 test$propldmc <- test$prop * test$ldmc_logit
+test$propherb <- test$prop * test$herb_logit
+
 
 # group variables
 data <- data.frame(cwmsla = tapply(test$propsla, test$code, sum))
 data$cwmldmc = tapply(test$propldmc, test$code, sum)
+data$cwmherb = tapply(test$propherb, test$code, sum)
+
 data$code <- rownames(data)
 data$garden <- substr(data$code, 1,3)
 data$plot <- substr(data$code, 4,5)
@@ -44,17 +51,25 @@ traitdat <- data[data$code != "WG1P6", ]
 tapply(test$prop, test$code, sum)
 
 # >>>>Stat Tests -----
-p <- ggplot(data, aes(x = treat, y = cwmsla))
+library(ggplot2)
+p <- ggplot(traitdat, aes(x = treat, y = cwmsla))
 p + geom_point()
 
-c <- ggplot(data, aes(x = treat, y = cwmldmc))
+c <- ggplot(traitdat, aes(x = treat, y = cwmldmc))
 c + geom_point()
 
+h <- ggplot(traitdat, aes(x = treat, y = cwmherb))
+h + geom_point()
+
+library(lme4)
+library(lmerTest)
 sla_rbl <- lmer(cwmsla ~ treat + (1|garden), data = traitdat)
 ldmc_rbl <- lmer(cwmldmc ~ treat + (1|garden), data = traitdat)
+herb_rbl <- lmer(cwmherb ~ treat + (1|garden), data = traitdat)
 
 summary(sla_rbl)
 summary(ldmc_rbl)
+summary(herb_rbl)
 
 # >>>>Plots ------
 
@@ -102,6 +117,7 @@ test <- tapply(main$WEIGHT, main$CODE,
 test <- stack(test)
 test$sla <- main$SLA # tutaj!
 test$ldmc <- main$LDMC
+test$herb <- main$HERB
 
 test$garden <- substr(test$ind, 1,3)
 test$plot <- substr(test$ind, 4,5)
@@ -114,14 +130,18 @@ for (row in 1:dim(test)[1]) {
 }
 
 # get cwm sla values
-names(test) <- c("prop", "code", "sla", "ldmc_logit", "garden","plot","treat")
+names(test) <- c("prop", "code", "sla", "ldmc_logit", "herb_logit", "garden","plot","treat")
 head(test)
 test$propsla <- test$prop * test$sla
 test$propldmc <- test$prop * test$ldmc_logit
+test$propherb <- test$prop * test$herb_logit
+
 
 # group variables
 data <- data.frame(cwmsla = tapply(test$propsla, test$code, sum))
 data$cwmldmc = tapply(test$propldmc, test$code, sum)
+data$cwmherb = tapply(test$propherb, test$code, sum)
+
 data$code <- rownames(data)
 data$garden <- substr(data$code, 1,3)
 data$plot <- substr(data$code, 4,5)
@@ -132,19 +152,27 @@ traitdat <- data[data$code != "WG1P6", ]
 # tests
 tapply(test$prop, test$code, sum)
 
-# >>>> Stat Tests -----
+# >>>>Stat Tests -----
+library(ggplot2)
+library(lmerTest)
 p <- ggplot(data, aes(x = treat, y = cwmsla))
 p + geom_point()
 
 c <- ggplot(data, aes(x = treat, y = cwmldmc))
 c + geom_point()
 
+h <- ggplot(data, aes(x = treat, y = cwmherb))
+h + geom_point()
+
+library(lme4)
 sla_rbl <- lmer(cwmsla ~ treat + (1|garden), data = traitdat)
 ldmc_rbl <- lmer(cwmldmc ~ treat + (1|garden), data = traitdat)
+herb_rbl <- lmer(cwmherb ~ treat + (1|garden), data = traitdat)
 
 summary(sla_rbl)
 summary(ldmc_rbl)
+summary(herb_rbl) # marginal predator and weevil
 
 # herbivory differences -----
-
+sp_codes <- 
 main
