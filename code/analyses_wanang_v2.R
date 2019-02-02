@@ -540,6 +540,22 @@ p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   ylab("")
 p1
 
+# Siimple lines
+# png("figs/fig3b.png",width=1200, height = 1200)
+p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
+  geom_line(size = 2, alpha=0.15) +
+  facet_grid(spec ~ comb, scales = "free") +
+  geom_point(cex = 3) + theme_bw() + 
+  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
+        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+        strip.text = element_text(size=20),
+        legend.justification=c(0.5,0.5), 
+        legend.position="bottom")+
+  xlab("") + 
+  ylab("")
+p1
+# dev.off()
+
 #png("figs/fig3.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   geom_line(aes(linetype = block), size = 3, alpha=0.15) +
@@ -557,7 +573,7 @@ p1
 
 # summaries, but these go below zero!
 
-png("figs/fig3sig.png",width=800, height = 800)
+# png("figs/fig3sig.png",width=800, height = 800)
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= values)) +
   facet_wrap(~type, scales = "free", ncol=4, nrow=5) +
   geom_point(size = 3, col = "grey80") + theme_bw()
@@ -565,7 +581,7 @@ p1 <- ggplot(stacked_cvst, aes(x = ind, y= values)) +
 p1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
                 geom="errorbar", color =colours, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color =colours, cex = 5)
-dev.off()
+# dev.off()
 
 stacked_cvst_logit <- stacked_cvst
 stacked_cvst_logit$values <- log(stacked_cvst_logit$values/(1-stacked_cvst_logit$values))
@@ -712,11 +728,11 @@ R2 <- RsquareAdj(m)$r.squared
 R2 
  
 # Check the effects for trees
-# test <- test[rownames(ra_tree), ]
-# mt <- rda(ra_tree~fungicide+herbivory_moderate+herbivory_high+insecticide+predator_exclosure+Condition(GARDEN),
-#          data=test)
-# # m <- rda(relative_abundances~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test)
-# anova(mt, by="terms", permutations = 999)
+test <- test[rownames(ra_tree), ]
+mt <- rda(ra_tree~fungicide+herbivory_moderate+herbivory_high+insecticide+predator_exclosure+Condition(GARDEN),
+         data=test)
+# m <- rda(relative_abundances~FUN+HLO+HHI+INS+PRE+Condition(GARDEN),data=test)
+anova(mt, by="terms", permutations = 9999)
 # plot(mt)
 
 # # goodness of fit ----
@@ -810,7 +826,7 @@ boxplot(ds_b[, rev(lineup)], main = trt_b, las=2)
 
 
 
-### experiments with hurdle lognormal model -----
+### experiments with hurdle lognormal model
 
 # vignette:
 #https://cloud.r-project.org/web/packages/GLMMadaptive/vignettes/ZeroInflated_and_TwoPart_Models.html
@@ -928,22 +944,39 @@ boxplot(ds_b[, rev(lineup)], main = trt_b, las=2)
 # Description of the comunity ----
 
 # most abundant species
+compare <- expand.grid(as.character(unique(main$TREAT)),
+                       as.character(unique(main$TREAT)))
+compare <- compare[compare$Var1 != compare$Var2, ]
+compare <- compare[compare$Var1 == "CONTROL", ]
+compare[,1] <- as.character(compare[,1])
+compare[,2] <- as.character(compare[,2])
+
+
 mainC <- main[main$TREAT == "CONTROL", ]
 library(forcats)
 
-# png("figs/figS1.png",width=800, height = 400)
-p <- ggplot(mainC, aes(x = fct_reorder(SP_CODE, WEIGHT, fun = median, .desc =TRUE), 
-                 y = log(WEIGHT))) + 
-  geom_boxplot() + theme(axis.text.x = element_text(angle = 90, 
-                                                    hjust = 1,
-                                                    vjust = 0.5,
-                                                    size = 9)) +
-  scale_x_discrete(name="") +
-  scale_y_continuous(name="log[kg]") + 
-  ggtitle("Dominance structure of control plots")
 
-p
-# dev.off()
+# strings <- c("cf", "ch2", "cp", "ch1", "ci")
+# 
+# for (i in 1:dim(compare)[1]){
+#   cnms <- c(compare[i,]$Var1, compare[i,]$Var2)
+#   dst <- main[main$TREAT %in% c(compare[i,]$Var1, compare[i,]$Var2), ]
+#   path <- paste("figs/figS", strings[i] ,".png", sep = "")
+#   png(path,width=1200, height = 600)
+#   p <- ggplot(dst, aes(x = fct_reorder(SP_CODE, WEIGHT, fun = median, .desc =TRUE), 
+#                        y = log(WEIGHT), fill=TREAT)) + 
+#     geom_boxplot() + theme_bw() + theme(axis.text.x = element_text(angle = 90, 
+#                                                                    hjust = 1,
+#                                                                    vjust = 0.5,
+#                                                                    size = 10)) +
+#     scale_x_discrete(name="") +
+#     scale_y_continuous(name="log[kg]") + 
+#     ggtitle("Dominance structure")
+#   
+#   print(p)
+#   dev.off()
+#   readline(prompt="Press [enter] to continue")
+# }
 
 # Melochia sp1 biomass
 exp(4.85957982)
@@ -968,3 +1001,106 @@ treeC <- tree[tree$TREAT == "CONTROL", ]
 sp_tree_c <- contingencyTable2(treeC, "SP_CODE", "CODE", "WEIGHT")
 mean(vegdist(t(sp_tree_c), method="bray"))
 
+# TRAITS for most abundant species ----
+
+#Piptar," mikamia", "melamu"
+pmds <- main[main$SP_CODE %in% c("PIPTAR", "MIKAMI", "MELAMU", 
+                                 "PIPEUM", "TRICPL"), ]
+pmds <- pmds[pmds$TREAT == "CONTROL", ]
+pmds$SP_CODE <- as.character(pmds$SP_CODE) 
+boxplot(HERB~SP_CODE, data=pmds)
+
+# inverse logistic
+il <- function(x){
+  return(exp(x)/(exp(x)+1))
+}
+
+library(emmeans)
+
+# herbBeta <- brm(il(HERB)~SP_CODE, data = pmds, family = Beta())
+# stanplot(herbBeta, pars="^b_")
+ggplot(pmds, aes(y=il(HERB), x=SP_CODE)) + geom_point()
+#leveneTest(HERB~SP_CODE, data=pmds, family=Beta()) # heteroscedasticity
+# glmmTMB(il(HERB) ~ SP_CODE + (1|BLOCK), data=pmds, family=list(family="beta",link="logit")) 
+lmerherb <- lmer(HERB~SP_CODE+(1|BLOCK), data=pmds)
+phtherb <- emmeans(lmerherb, list(pairwise~SP_CODE), adjust = "tukey")
+#plot(phtherb)
+p1 <- emmip(lmerherb, ~ SP_CODE, CIs = TRUE) + ggtitle("Herbivory")+ 
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+
+ggplot(pmds, aes(y=SLA, x=SP_CODE)) + geom_point()
+#leveneTest(SLA~SP_CODE, data=pmds)  # no heteroscedasticity
+lmersla <- lmer(SLA~SP_CODE+(1|BLOCK), data=pmds)
+phtsla <- emmeans(lmersla, list(pairwise~SP_CODE), adjust = "tukey")
+#plot(phtsla)
+p2 <- emmip(lmersla, ~ SP_CODE, CIs = TRUE) + ggtitle("SLA")+ 
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+
+# LDMC tukey
+ggplot(pmds, aes(y=LDMC, x=SP_CODE)) + geom_point()
+#leveneTest(LDMC~SP_CODE, data=pmds)  # no heteroscedasticity
+lmerldmc <- lmer(LDMC~SP_CODE+(1|BLOCK), data=pmds)
+phtldmc <- emmeans(lmerldmc, list(pairwise~SP_CODE), adjust = "tukey")
+#plot(phtldmc)
+p3 <- emmip(lmerldmc, ~ SP_CODE, CIs = TRUE) + ggtitle("LDMC") + 
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank())
+
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+# png("figs/figXtukey.png", width=800, height = 300)
+multiplot(p1, p2, p3, cols=3)
+# dev.off()
+
+# Trying with ordisurf
+source("code/cwm_analysis.R")
+traitdat <- traitdat[rownames(m$CA$u), ]
+par(mfrow=c(1,3))
+sherb <- ordisurf(m, traitdat$cwmherb,family="gaussian", col="darkcyan",
+                  main = "Herbivory")
+ssla  <- ordisurf(m, traitdat$cwmsla,family="gaussian", col="darkcyan",
+                  main = "SLA")
+sldmc <- ordisurf(m, traitdat$cwmldmc,family="gaussian", col="darkcyan",
+                  main = "LDMC")
+
+# All significant??
+par(mfrow=c(1,1))
+summary(sherb)
+summary(ssla)
+summary(sldmc)

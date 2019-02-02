@@ -13,7 +13,7 @@ test <- tapply(main$WEIGHT, main$CODE,
                function(X){return(X/sum(X))}) #497 obs
 
 test <- stack(test)
-test$sla <- main$SLA # tutaj!
+test$sla <- main$SLA # here!
 test$ldmc <- main$LDMC
 test$herb <- main$HERB
 
@@ -91,7 +91,7 @@ fig2 <- ggplot(cwmpanel, aes(x=treat, y=val)) +
 colors = color=c("black","grey50","red","grey50","grey50","grey50",
                  "black","grey50","orange","grey50","grey50","grey50")
 
-png("figs/fig2.png",width=800, height = 400)
+# png("figs/fig2.png",width=800, height = 400)
 fig2 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
                     geom="errorbar", color= colors, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
@@ -100,7 +100,7 @@ fig2 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1),
         strip.text = element_text(size=20),
         legend.justification=c(0.5,0.5), 
         legend.position="bottom")+xlab("")+ylab("")
-dev.off()
+# dev.off()
 
 # tree community ----
 
@@ -172,7 +172,3 @@ herb_rbl <- lmer(cwmherb ~ treat + (1|garden), data = traitdat)
 summary(sla_rbl)
 summary(ldmc_rbl)
 summary(herb_rbl) # marginal predator and weevil
-
-# herbivory differences -----
-sp_codes <- 
-main
