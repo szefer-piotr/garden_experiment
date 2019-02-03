@@ -292,10 +292,9 @@ for (i in 1:length(names(cvst))){
   stacked_cvst <- rbind(stacked_cvst, sp_stack)
 }
 
-stacked_cvst
-
 #get rid of TREMOR form the comparisons
 stacked_cvst <- stacked_cvst[stacked_cvst$type != "CONTROL_FUNGICIDE_TREMOR", ]
+stacked_cvst$color <- "black"
 
 # Statistical tests for biomass increase for individual species
 
@@ -338,7 +337,7 @@ cvst <- cvst[order(names(cvst))]
 
 diff_dat <- data.frame()
   
-# name <- 19
+# name <- 13
 for (name in 1:length(names(cvst))){
   sp_data <- cvst[[name]]
   print(names(cvst)[[name]])
@@ -347,8 +346,8 @@ for (name in 1:length(names(cvst))){
   sp_stack$block <- rownames(sp_data)
   
   #treatment - control
-  dd <- data.frame(diftc = c(sp_data[,2] - sp_data[,1]), comp = names(cvst)[[name]])
-  diff_dat <- rbind(diff_dat, dd)
+  # dd <- data.frame(diftc = c(sp_data[,2] - sp_data[,1]), comp = names(cvst)[[name]])
+  # diff_dat <- rbind(diff_dat, dd)
   
   # dd <- data.frame( nm = c(sp_data[,2] - sp_data[,1]))
   # colnames(dd) <- names(cvst)[[name]]
@@ -365,61 +364,61 @@ for (name in 1:length(names(cvst))){
   # Zero inflated beta
   # m1 <- brm(values~ ind + (1|block), family=zero_inflated_beta(),
   #           data = sp_stack)
-  
+
   # lt <- sp_stack
   # lt$values <- log((lt$values)/(1-lt$values))
   # lt$values
-  # 
+  #
   # compare_ic(waic(m0), waic(m1), ic = "waic")
-  
-  # pred1 <- sp_stack %>% 
+
+  # pred1 <- sp_stack %>%
   #   tidybayes::add_predicted_draws(m1, n = 1000) %>%
   #   filter(ind == unique(sp_stack$ind)[1])
   # 
-  # pred2 <- sp_stack %>% 
+  # pred2 <- sp_stack %>%
   #   tidybayes::add_predicted_draws(m1, n = 1000) %>%
   #   filter(ind == unique(sp_stack$ind)[2])
-  
+  # 
   # Difference between posterior distributions
-  
   # hist(pred1$.prediction, breaks = 150)
   # hist(pred2$.prediction, breaks = 150, add=T)
-  # 
   # sum(pred1$.prediction - pred2$.prediction < 0)/length(pred1$.prediction)
-  # 
   # sum((pred1$.prediction - pred2$.prediction) > 0.05)/length(pred1$.prediction)
-  
+  # 
   # sph <- stanplot(m1, type = "hist", pars="^b_")
-  # sph$data
+  # sph$data[]
   # 
-  # sp_stack %>% 
+  # sp_stack %>%
   #   tidybayes::add_predicted_draws(m1, n = 1000) %>%
-  #   ggplot(aes(y = logit(.prediction), x = ind, group = block, fill=block, color = block)) + 
-  #   geom_jitter(alpha = 0.5) + 
+  #   ggplot(aes(y = logit(.prediction), x = ind, group = block, fill=block, color = block)) +
+  #   geom_jitter(alpha = 0.5) +
   #   geom_point(aes(y = logit(values), x = ind), size = 3, alpha = 0.1,
-  #              color = "grey50") + 
+  #              color = "grey50") +
   #   theme_bw()
-  
+
   # Test for heteroscedasticity
-  
-  # Differences and paired-t-test
-  
-  # ltest <- leveneTest(values~ind, data=sp_stack)
-  # 
+  # ltest <- leveneTest(values~ind, data=sp_stack) 
   # print(ltest)
-  # 
   # qqnorm(sp_stack$values)
   # qqline(sp_stack$values)
-  # 
+  
   # Paired t test
-  res <- t.test(sp_data[,1],sp_data[,2],paired = TRUE, alternative = "two.sided")
+  res <- t.test(sp_data[,1],sp_data[,2],paired = TRUE,
+                alternative = "two.sided", var.equal = TRUE)
   pval <- res$p.value
   print(pval)
   
-  # Sined rank test
+  #Sined rank test
   # res <- wilcox.test(sp_data[,1],sp_data[,2], paired=TRUE)
-  # pval <- res$p.value 
+  # pval <- res$p.value
   # print(pval)
+  
+  # Betareg
+  # betareg(formula, data, subset, na.action, weights, offset,
+  #         link = c("logit", "probit", "cloglog", "cauchit", "log", "loglog"),
+  #         link.phi = NULL, type = c("ML", "BC", "BR"),
+  #         control = betareg.control(...), model = TRUE,
+  #         y = TRUE, x = FALSE, ...)
   
   # Paired t test logit
   # sp_logit <- log(sp_data/(1-sp_data))
@@ -429,7 +428,6 @@ for (name in 1:length(names(cvst))){
   # #boxplot(sp_logit, main=names(cvst)[[name]])
   # 
   # res <- t.test(sp_logit[,1],sp_logit[,2],paired = TRUE, alternative = "two.sided")
-  # 
   # pval <- res$p.value
   # print(pval)
   
@@ -448,13 +446,15 @@ for (name in 1:length(names(cvst))){
   # print(pval)
   colours <- c(colours, "black")
   if (pval <= 0.1){
-    colours <- c(colours, "orange")
+    colorval <- "orange"
   }
   if (pval <= 0.05){
-    colours <- c(colours, "red")
-  } else {
-    colours <- c(colours, "grey30")
+    colorval <- "red"
+  } 
+  if (pval > 0.1){
+    colorval <- "grey30"
   }
+  stacked_cvst[stacked_cvst$type == (names(cvst)[[name]]), ]$color <- colorval
 }
 
 # difference correlations
@@ -527,25 +527,25 @@ for (name in 1:length(names(cvst))){
 #   ylab("")
 # p1
 
-p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
-  geom_line(aes(linetype = block), size = 1, alpha=0.15) +
-  facet_grid(spec ~ comb, scales = "free") +
-  geom_point(cex = 2) + theme_bw() + 
-  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
-        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
-        strip.text = element_text(size=10),
-        legend.justification=c(0.5,0.5), 
-        legend.position="bottom")+
-  xlab("") + 
-  ylab("")
-p1
+# p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
+#   geom_line(aes(linetype = block), size = 1, alpha=0.15) +
+#   facet_grid(spec ~ comb, scales = "free") +
+#   geom_point(cex = 2) + theme_bw() + 
+#   theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+#         strip.text = element_text(size=10),
+#         legend.justification=c(0.5,0.5), 
+#         legend.position="bottom")+
+#   xlab("") + 
+#   ylab("")
+# p1
 
 # Siimple lines
 # png("figs/fig3b.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   geom_line(size = 2, alpha=0.15) +
   facet_grid(spec ~ comb, scales = "free") +
-  geom_point(cex = 3) + theme_bw() + 
+  geom_point(cex = 3, colour = stacked_cvst$color) + theme_bw() + 
   theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
         axis.text.y=element_text(angle=0, size=10, hjust=0.5),
         strip.text = element_text(size=20),
@@ -557,18 +557,18 @@ p1
 # dev.off()
 
 #png("figs/fig3.png",width=1200, height = 1200)
-p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
-  geom_line(aes(linetype = block), size = 3, alpha=0.15) +
-  facet_grid(spec ~ comb, scales = "free") +
-  geom_point(cex = 6) + theme_bw() + 
-  theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
-        axis.text.y=element_text(angle=0, size=20, hjust=0.5),
-        strip.text = element_text(size=20),
-        legend.justification=c(0.5,0.5), 
-        legend.position="bottom")+
-  xlab("") + 
-  ylab("")
-p1
+# p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
+#   geom_line(aes(linetype = block), size = 3, alpha=0.15) +
+#   facet_grid(spec ~ comb, scales = "free") +
+#   geom_point(cex = 6) + theme_bw() + 
+#   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
+#         strip.text = element_text(size=20),
+#         legend.justification=c(0.5,0.5), 
+#         legend.position="bottom")+
+#   xlab("") + 
+#   ylab("")
+# p1
 #dev.off()
 
 # summaries, but these go below zero!
@@ -1088,19 +1088,74 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 multiplot(p1, p2, p3, cols=3)
 # dev.off()
 
-# Trying with ordisurf
+# All traits plots -----
+mainC <- main[main$TREAT == "CONTROL", ]
+ggplot(mainC, aes(y=LDMC, x=fct_reorder(SP_CODE, 
+                               LDMC,
+                               fun = median, .desc =TRUE))) + 
+  geom_boxplot() + theme(axis.text.x = element_text(angle = 90, 
+                                                    hjust = 1,
+                                                    vjust = 0.5,
+                                                    size = 5))
+
+ggplot(main, aes(y=SLA, 
+                 x=fct_reorder(SP_CODE, 
+                               SLA,
+                               fun = median, .desc =TRUE))) + geom_boxplot()
+
+
+# Ind sp traits vs treatment ----
+sp_tr <- main[main$SP_CODE %in% c("PIPTAR", "MIKAMI", "MELAMU", 
+                                          "PIPEUM", "TRICPL"), ]
+ggplot(sp_tr, aes(x = TREAT, y= LDMC, color=TREAT)) +
+  #geom_boxplot() +
+  geom_jitter(width=0.5) +
+  facet_grid(~SP_CODE, scales = "free") + 
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1,
+                                   vjust = 0.5,
+                                   size = 5))
+ggplot(sp_tr, aes(x = TREAT, y= SLA, color=TREAT)) +
+  #geom_boxplot() +
+  geom_jitter(width=0.5) +
+  facet_grid(~SP_CODE, scales = "free")+ 
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1,
+                                   vjust = 0.5,
+                                   size = 5))
+ggplot(sp_tr, aes(x = TREAT, y= HERB, color=TREAT)) +
+  #geom_boxplot() +
+  geom_jitter(width=0.5) +
+  facet_grid(~SP_CODE, scales = "free")+ 
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1,
+                                   vjust = 0.5,
+                                   size = 5))
+
+
+# Trying with ordisurf ------
 source("code/cwm_analysis.R")
 traitdat <- traitdat[rownames(m$CA$u), ]
+
+png("figs/figSxord.png", width=800, height=300)
 par(mfrow=c(1,3))
 sherb <- ordisurf(m, traitdat$cwmherb,family="gaussian", col="darkcyan",
                   main = "Herbivory")
+text(m, display="bp", col="darkcyan", lwd=2)
 ssla  <- ordisurf(m, traitdat$cwmsla,family="gaussian", col="darkcyan",
                   main = "SLA")
+text(m, display="bp", col="darkcyan", lwd=2)
 sldmc <- ordisurf(m, traitdat$cwmldmc,family="gaussian", col="darkcyan",
                   main = "LDMC")
+text(m, display="bp", col="darkcyan", lwd=2)
 
-# All significant??
-par(mfrow=c(1,1))
+dev.off()
+
+
+
+
+# All significant -> yeah!
+# par(mfrow=c(1,1))
 summary(sherb)
 summary(ssla)
 summary(sldmc)
