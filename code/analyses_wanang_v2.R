@@ -403,10 +403,10 @@ for (name in 1:length(names(cvst))){
   # qqline(sp_stack$values)
   
   # Paired t test
-  res <- t.test(sp_data[,1],sp_data[,2],paired = TRUE,
-                alternative = "two.sided", var.equal = TRUE)
-  pval <- res$p.value
-  print(pval)
+  # res <- t.test(sp_data[,1],sp_data[,2],paired = TRUE,
+  #               alternative = "two.sided", var.equal = TRUE)
+  # pval <- res$p.value
+  # print(pval)
   
   #Sined rank test
   # res <- wilcox.test(sp_data[,1],sp_data[,2], paired=TRUE)
@@ -438,13 +438,14 @@ for (name in 1:length(names(cvst))){
   # sp_stack$values <- predict(valuesBCMod, 
   #                            sp_stack$values)
   
-  # f0 <- lmer(log(values+1)~(1|block),
-  #            data = sp_stack)
-  # f1 <- lmer(log(values+1)~ind+ (1|block),
-  #              data = sp_stack)
-  # pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
-  # print(pval)
-  colours <- c(colours, "black")
+  f0 <- lmer(log(values+1)~(1|block),
+             data = sp_stack)
+  f1 <- lmer(log(values+1)~ind+ (1|block),
+               data = sp_stack)
+  pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
+  print(pval)
+  
+  
   if (pval <= 0.1){
     colorval <- "orange"
   }
@@ -741,19 +742,21 @@ gof <- goodness(m, display = "species", statistic = "explained",
 gof2 <- inertcomp(m, display = "species", proportional = TRUE)
 
 specs <-sort(round(gof2[,1], 3), decreasing = T)
-selected <- names(specs[1:10])
+selected <- names(specs[1:20])
 
 specs <-sort(round(gof[,1], 3), decreasing = T)
-selected <- names(specs[1:10])
+selected <- names(specs[1:20])
 
 
 
 # actuall figure ----
 
 #https://www.fromthebottomoftheheap.net/2012/04/11/customising-vegans-ordination-plots/
-
+par(mfrow=c(1,1))
 scl = 2
 #plot(m, scaling = scl)
+
+# png("figs/figXordination.png", width=800, height=800)
 plot(m, type = "n", scaling = scl)
 colvec <- c(rgb(230,159,0, max=255), 
             rgb(86,180,233, max=255), 
@@ -762,7 +765,7 @@ colvec <- c(rgb(230,159,0, max=255),
             rgb(213,94,0, max=255), 
             rgb(240,228,66, max=255))
 with(test, points(m, display = "sites", col = colvec[TREAT],
-                      scaling = scl, pch = 21, cex = 2, bg = colvec[TREAT]))
+                      scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
 # Species, but it is just a mess
 # text(m, display = "species", scaling = scl, cex = 0.8,
 #      col = rgb(1,1,1, max = 255, alpha=100))
@@ -771,11 +774,13 @@ with(test, points(m, display = "sites", col = colvec[TREAT],
 with(test, legend("topright", legend = levels(TREAT), bty = "n",
                       col = colvec, pch = 21, pt.bg = colvec))
 text(m, display="bp", col="darkcyan", lwd=2)
-
 selection <- rownames(summary(m)$species) %in% selected
 orditorp(m, scaling = -1, 
-         display = "species", select = selection, col = "darkcyan")
+         display = "species", select = selection, col = "forestgreen",
+         lwd =2)
 
+#substitute(paste(italic('p value'), " = 0.01")) #italics
+# dev.off()
 # orditkplot(m,scaling=scl, display = "species")
 
 # variance explained ----
@@ -955,6 +960,18 @@ compare[,2] <- as.character(compare[,2])
 mainC <- main[main$TREAT == "CONTROL", ]
 library(forcats)
 
+p <- ggplot(main, aes(x = fct_reorder(SP_CODE, WEIGHT, fun = median, .desc =TRUE), 
+                                            y = log(WEIGHT))) +
+                         geom_boxplot() + theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90,
+                                                                                        hjust = 1,
+                                                                                        vjust = 0.5,
+                                                                                        size = 10)) +
+                         scale_x_discrete(name="") +
+                         scale_y_continuous(name="log[kg]") +
+                         ggtitle("Dominance structure")
+
+                       print(p)
 
 # strings <- c("cf", "ch2", "cp", "ch1", "ci")
 # 
