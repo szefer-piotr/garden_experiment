@@ -39,7 +39,7 @@ plant_mat_all <- read.table("plant_mat_all.txt")
 WNGtreat <- read.table("WNGtreat.txt")
 
 ####
-# Install necessary packages  <<<<<<<<<<
+# Install necessary packages  ----
 ####
 
 #install.packages(c("vegan","stringr","dplyr", "ggplot2"))
@@ -51,9 +51,7 @@ library(stringr)
 library(dplyr)
 library(ggplot2)
 
-################################################################################
-############################   FUNCTIONS #######################################
-################################################################################
+############################   FUNCTIONS ----
 
 ### Assemble function
 assemble <- function(spec_patterns, bio_patterns, plot_name, plant_names,
@@ -182,9 +180,8 @@ getEmpiricalBC <- function(p1,p2,empiricalBC){
 }
 
 
-#################################################################################
-######### RANDOMIZATIONS ########################################################
-#################################################################################
+
+######### RANDOMIZATIONS -----
 
 # 2. Pairwise comparisons
 
@@ -213,9 +210,7 @@ trtPairs <- rbind(trtPairs[1:2,1:2],
                   lowerPart)
 
 
-############################
-## SUBSETTING STARTS HERE ##
-############################
+## SUBSETTING STARTS HERE----
 
 # comb = 1 # for testing procedures inside the function
 
@@ -274,18 +269,14 @@ randomization <- function(plant_mat){
                                  sub_all_pairs$P2[comp],
                                  empiricalBC)
       
-      #######################################
-      # Raup Crick calculations with result #
-      #######################################
+      # Raup Crick calculations with result 
       
       # Assembly communitites for a given pair
       RCresult <- RCrands(p1,p2,sub_plant_mat,
                           empBCval, rands = rands, 
                           accu = accu)
       
-      #######################################
-      # Put that result in the matrix RCmat #
-      #######################################
+      # Put that result in the matrix RCmat
       
       RCmat[rownames(RCmat) == p1, colnames(RCmat) == p2] <- RCresult$RC
     }
@@ -307,9 +298,7 @@ setwd("./all_assembly")
 
 randomization(plant_mat_all)
 
-##################################################################################
-##############  PROCESS RESULTS OF THE RANDOMIZATION #############################
-##################################################################################
+##############  PROCESS RESULTS OF THE RANDOMIZATION -----
 
 plotMeMyGraphs <- function(path){
   
@@ -365,9 +354,8 @@ plotMeMyGraphs <- function(path){
   }
   
   
-  ##########################
-  # 3b. ggplot facet plots #
-  ##########################
+  
+  # 3b. ggplot facet plots
   
   dataRC_facets
   dataRC_facets_plot <- data.frame()
@@ -427,9 +415,7 @@ plotMeMyGraphs <- function(path){
 }
 
 
-###############################
-# Read the data from the file #
-###############################
+# Read the data from the file ------
 
 setwd("..")
 setwd("all_assembly")
@@ -447,9 +433,13 @@ windows(800,600)
 plot2$plot
 
 #write.table(plot2$df, "randomizationsTrees.txt")
-
-
 pdf()
 plot1
 plot2
 dev.off()
+
+# DBH sampling
+maindbh <- read.table("datasets/supplementary/wng_main.txt", header = T)
+maindbh <- maindbh[maindbh$CODE != "WG1P6", ]#remove insecticide
+
+# structure data such that I can 

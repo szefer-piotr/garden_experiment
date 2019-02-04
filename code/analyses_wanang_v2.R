@@ -724,10 +724,16 @@ anova(m, by="axis", permutations = 999)
 
 summary(m)
 
+# R2 -----
 coef(m)
 R2 <- RsquareAdj(m)$r.squared
 R2 
  
+# Variance explained -----
+summary(eigenvals(m))
+#rda1 19.55%
+#rda2 4.37%
+
 # Check the effects for trees
 test <- test[rownames(ra_tree), ]
 mt <- rda(ra_tree~fungicide+herbivory_moderate+herbivory_high+insecticide+predator_exclosure+Condition(GARDEN),
@@ -739,49 +745,93 @@ anova(mt, by="terms", permutations = 9999)
 # # goodness of fit ----
 gof <- goodness(m, display = "species", statistic = "explained",
          summarize = FALSE)
-gof2 <- inertcomp(m, display = "species", proportional = TRUE)
-
-specs <-sort(round(gof2[,1], 3), decreasing = T)
-selected <- names(specs[1:20])
+# gof2 <- inertcomp(m, display = "species", proportional = TRUE)
+# 
+# specs <-sort(round(gof2[,1], 3), decreasing = T)
+# selected <- names(specs[1:20])
 
 specs <-sort(round(gof[,1], 3), decreasing = T)
-selected <- names(specs[1:20])
+selected_gof <- names(specs[1:15])
 
+selected_s <- selected[selected %in% selected_gof]
 
 
 # actuall figure ----
-
-#https://www.fromthebottomoftheheap.net/2012/04/11/customising-vegans-ordination-plots/
 par(mfrow=c(1,1))
 scl = 2
 #plot(m, scaling = scl)
 
-# png("figs/figXordination.png", width=800, height=800)
-plot(m, type = "n", scaling = scl)
-colvec <- c(rgb(230,159,0, max=255), 
-            rgb(86,180,233, max=255), 
-            rgb(0,158,115, max=255), 
-            rgb(0,114,178, max=255), 
-            rgb(213,94,0, max=255), 
-            rgb(240,228,66, max=255))
+x11(10,10)
+
+
+png("figs/figXordination.png", width=800, height=800)
+# Selected species vectors
+selection <- rownames(summary(m)$species) %in% selected_s
+
+# Species coodrinates vector
+# opl <- ordipointlabel(m, display ="species", select = selection, scaling = scl)
+# names(opl)
+# coord <- opl$points
+
+# Main plot - sites
+plot(m, type = "n", scaling = scl, xlab = "RDA1 [19.55%]",
+     ylab = "RDA2 [4.37%]", cex.lab = 1.5)
+alpha = 200
+colvec <- c(rgb(230,159,0,alpha, max=255), 
+            rgb(86,180,233,alpha, max=255), 
+            rgb(0,158,115,alpha, max=255), 
+            rgb(0,114,178,alpha, max=255), 
+            rgb(213,94,0,alpha, max=255), 
+            rgb(240,228,66,alpha, max=255))
+# # Species
+# arrows(rep(0,dim(coord)[1]),  rep(0,dim(coord)[1]), coord[,1], coord[,2], 
+#        code = 2, length = 0.05)
+
+orditorp(m, display = "species", select = selection, col = "grey50",
+         lwd=4, cex =2, pch = 19, scaling = scl)
+# points(m, display = "species", select = selection, 
+#        col = "grey50", cex =1, pch = 19, scaling = -1)
+
+# Points
 with(test, points(m, display = "sites", col = colvec[TREAT],
                       scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
-# Species, but it is just a mess
-# text(m, display = "species", scaling = scl, cex = 0.8,
-#      col = rgb(1,1,1, max = 255, alpha=100))
-
+# Vectors
+text(m, display="bp", col="darkcyan", lwd=2, 
+     cex = 2, scaling = scl)
 # Legend
 with(test, legend("topright", legend = levels(TREAT), bty = "n",
                       col = colvec, pch = 21, pt.bg = colvec))
-text(m, display="bp", col="darkcyan", lwd=2)
-selection <- rownames(summary(m)$species) %in% selected
-orditorp(m, scaling = -1, 
-         display = "species", select = selection, col = "forestgreen",
-         lwd =2)
+dev.off()
 
-#substitute(paste(italic('p value'), " = 0.01")) #italics
-# dev.off()
-# orditkplot(m,scaling=scl, display = "species")
+# Main plot - species
+#x11(800, 800)
+png("figs/fig3ordsp.png", 800,800)
+plot(m, type = "n", display= "species", scaling = scl, xlab = "RDA1 [19.55%]",
+     ylab = "RDA2 [4.37%]")
+alpha = 200
+colvec <- c(rgb(230,159,0,alpha, max=255), 
+            rgb(86,180,233,alpha, max=255), 
+            rgb(0,158,115,alpha, max=255), 
+            rgb(0,114,178,alpha, max=255), 
+            rgb(213,94,0,alpha, max=255), 
+            rgb(240,228,66,alpha, max=255))
+# # Species
+# arrows(rep(0,dim(coord)[1]),  rep(0,dim(coord)[1]), coord[,1], coord[,2], 
+#        code = 2, length = 0.05)
+
+# orditorp(m, display = "species", select = selection, col = "grey50",
+#          lwd=4, cex =1, pch = 19, scaling = scl)
+# points(m, display = "species", select = selection, 
+#        col = "grey50", cex =1, pch = 19, scaling = -1)
+# Vectors
+text(m, display="species", col="darkcyan", lwd=2, scaling = scl)
+# Points
+with(test, points(m, display = "species", col = colvec[TREAT],
+                  scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
+# Legend
+with(test, legend("topright", legend = levels(TREAT), bty = "n",
+                  col = colvec, pch = 21, pt.bg = colvec))
+dev.off()
 
 # variance explained ----
 barplot(m$CA$eig/m$tot.chi, names.arg = 1:m$CA$rank, cex.names = 0.5, 
@@ -1034,6 +1084,8 @@ il <- function(x){
 
 library(emmeans)
 
+vals <- emmip(lmerherb, ~ SP_CODE, CIs = TRUE)
+
 # herbBeta <- brm(il(HERB)~SP_CODE, data = pmds, family = Beta())
 # stanplot(herbBeta, pars="^b_")
 ggplot(pmds, aes(y=il(HERB), x=SP_CODE)) + geom_point()
@@ -1101,9 +1153,76 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
-# png("figs/figXtukey.png", width=800, height = 300)
+# letters and style
+
+## Tukey tests ------
+library(multcompView)
+library(lsmeans)
+
+marginal = lsmeans(lmerherb,~ SP_CODE)
+CLD = cld(marginal,alpha=0.1,Letters=letters,adjust="tukey")
+
+pd = position_dodge(0.4)
+p1 <- ggplot(CLD, aes(x=SP_CODE, y=lsmean,label=.group)) +
+  geom_point(shape  = 15,size   = 4,position = pd) +
+  geom_errorbar(aes(ymin  =  lower.CL,ymax  =  upper.CL),
+                width =  0.2,size  =  0.7,position = pd) +
+  theme_bw() +
+  theme(axis.title   = element_text(face = "bold"),
+        axis.text    = element_text(face = "bold",
+                                    angle = 90),
+        plot.caption = element_text(hjust = 0)) +
+  ylab("Least square mean") +
+  xlab("") + 
+  ggtitle ("HERBIVORY") +
+  geom_text(nudge_x = c(0, 0, 0, 0),
+            nudge_y = c(2.1, 2.1, 2.1, 2.1),
+            color   = "black")
+p1
+
+marginal = lsmeans(lmersla,~ SP_CODE)
+CLD = cld(marginal,alpha=0.05,Letters=letters,adjust="tukey")
+
+p2 <- ggplot(CLD, aes(x=SP_CODE, y=lsmean,label=.group)) +
+  geom_point(shape  = 15,size   = 4,position = pd) +
+  geom_errorbar(aes(ymin  =  lower.CL,ymax  =  upper.CL),
+                width =  0.2,size  =  0.7,position = pd) +
+  theme_bw() +
+  theme(axis.title   = element_text(face = "bold"),
+        axis.text    = element_text(angle = 90,
+                                    face = "bold"),
+        plot.caption = element_text(hjust = 0)) +
+  ylab("") +
+  xlab("") + 
+  ggtitle ("SLA") +
+  geom_text(nudge_x = c(0, 0, 0, 0),
+            nudge_y = c(0.5, 0.5, 0.5, 0.5),
+            color   = "black")
+
+marginal = lsmeans(lmerldmc,~ SP_CODE)
+CLD = cld(marginal,alpha=0.05,Letters=letters,adjust="tukey")
+
+p3 <- ggplot(CLD, aes(x=SP_CODE, y=lsmean,label=.group)) +
+  geom_point(shape  = 15,size   = 4,position = pd) +
+  geom_errorbar(aes(ymin  =  lower.CL,ymax  =  upper.CL),
+                width =  0.2,size  =  0.7,position = pd) +
+  theme_bw() +
+  theme(axis.title   = element_text(face = "bold"),
+        axis.text    = element_text(face = "bold",
+                                    angle = 90),
+        plot.caption = element_text(hjust = 0)) +
+  ylab("") +
+  xlab("") + 
+  ggtitle ("LDMC") +
+  geom_text(nudge_x = c(0, 0, 0, 0),
+            nudge_y = c(0.5, 0.5, 0.5, 0.5),
+            color   = "black")
+
+#p3
+
+png("figs/figXtukey.png", width=800, height = 300)
 multiplot(p1, p2, p3, cols=3)
-# dev.off()
+dev.off()
 
 # All traits plots -----
 mainC <- main[main$TREAT == "CONTROL", ]
@@ -1176,3 +1295,20 @@ dev.off()
 summary(sherb)
 summary(ssla)
 summary(sldmc)
+
+### Correlation of RDA coord with Traits  ------
+
+x <- m$CCA$v[,1]
+sp_means <- tapply(main$LDMC, main$SP_CODE, mean, na.rm=T)
+cordat <- main[, c("SP_CODE", "LDMC")]
+cordat$COORD <- x[cordat$SP_CODE]
+par(mfrow=c(1,1))
+ggplot(cordat, aes(y=LDMC,x=COORD)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
+# For mean values for species
+sp_means <- sp_means[names(x)]
+dat <- as.data.frame(cbind(sp_means, x))
+ggplot(dat, aes(y=sp_means,x=x)) + 
+  geom_point() + 
+  geom_smooth(method = "lm")
