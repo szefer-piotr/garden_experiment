@@ -1,7 +1,7 @@
 # Data processing file for the Garden experiment
 
 # Source all the datasets
-source("AX_leaf_frames_analysis_data_processing.R")
+source("code/AX_leaf_frames_analysis_data_processing.R")
 
 # 1. Load necessary libraries
 # Load all libraries

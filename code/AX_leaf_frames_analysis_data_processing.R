@@ -5,8 +5,8 @@
 
 ## Read the dataset and drop the basal area columns
 ### Read the main dataset
-dataset <- read.csv("datasets/main_biomass_wng_ohu.csv", sep=",", dec=".", header=T)
-dataset <- dataset[, 1:23]
+dataset <- read.csv("datasets/supplementary/main_biomass_wng_ohu.csv", sep=",", dec=".", header=T)
+#dataset <- dataset[, 1:23]
 
 # Add location variable and fix the classes
 dataset$LOCATION <- substr(dataset$CODE, 1,1)
@@ -16,8 +16,8 @@ dataset$WEIGHT <- as.numeric(as.character(dataset$WEIGHT))
 dataset$DRY <- as.numeric(as.character(dataset$DRY))
 
 ## Read the leaf frames dataset
-leafOhu <- read.csv("datasets/ohu_leaf_frames.csv", sep="\ ")
-leafWng <- read.csv("datasets/wng_leaf_frames.csv", sep="\ ") # Created with getOg script
+leafOhu <- read.csv("datasets/supplementary/ohu_leaf_frames.csv", sep="\ ")
+leafWng <- read.csv("datasets/supplementary/wng_leaf_frames.csv", sep="\ ") # Created with getOg script
 
 ## Unify the names
 leafWng$Label <- as.character(leafWng$Label)
@@ -133,7 +133,7 @@ means[rownames(means) == "WGP3CALOMU_P.JPG", ]$garden <- "WG1"
 
 
 # Change the plantcode in means dataset according to "meansCorrect.txt"
-mC <- read.table("datasets/meansCorrect.csv", header = FALSE, sep="\t")
+mC <- read.table("datasets/supplementary/meansCorrect.csv", header = FALSE, sep="\t")
 mC[,1] <- as.character(mC[,1])
 mC[,2] <- as.character(mC[,2])
 

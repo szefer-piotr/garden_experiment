@@ -9,6 +9,7 @@ library(car)
 library(brms)
 library(vegan)
 library(MASS)
+library(betareg)
 
 contingencyTable2 <- function(dataset, ROW, COL, VALUE){
   # Get rid of the empty factors
@@ -199,17 +200,15 @@ ratree <- main[order(main$CODE), ] # for the whole community
 ratree$WEIGHT <-  stack(tapply(tree$WEIGHT, tree$CODE, function(x){x/sum(x)}))$value
 ratree$WEIGHT <-  stack(tapply(main$WEIGHT, main$CODE, function(x){x/sum(x)}))$value
 
-# test (any plot code should show same species)
-# code <- "WG2P2"
-# a <- ratree[ratree$CODE == code, c("WEIGHT","SP_CODE")]
-# b <-   tree[  tree$CODE == code, c("WEIGHT","SP_CODE")]
-# plot(a$WEIGHT~b$WEIGHT)
-
-#comb_no <- 2
 for (comb_no in 1:dim(comb)[1]){
+  
   # step 1 subset the dataset to a given pair of treatments
   subset <- ratree[ratree$TREAT %in% c(as.character(comb[comb_no,]$Var1), #control
                                    as.character(comb[comb_no,]$Var2)), ]
+  
+  # Biomans of the speceis vs the rest
+  # subset <- tree[tree$TREAT %in% c(as.character(comb[comb_no,]$Var1), #control
+  #                                      as.character(comb[comb_no,]$Var2)), ]
   
   # subset_main <- main[main$TREAT %in% c(as.character(comb[comb_no,]$Var1), 
   #                                  as.character(comb[comb_no,]$Var2)), ]
@@ -218,14 +217,10 @@ for (comb_no in 1:dim(comb)[1]){
                          comb[comb_no,]$Var2, sep="_")
   
   ct_sub <- contingencyTable2(subset, "CODE","SP_CODE", "WEIGHT")
-  rowSums(ct_sub)
-  
   pair_comp[[usp_name_list]] <- (ct_sub)
   
   treats <- subset[, c("CODE", "BLOCK","TREAT")]
   pair_comp_treat[[usp_name_list]] <- treats[!duplicated(treats),] #All plots with their treatments.
-  
-  # convert weights into relative weights
   
   # step 2 most often occuring species present in both
   sub_table <- table(subset$SP_CODE, subset$TREAT)
@@ -296,6 +291,10 @@ for (i in 1:length(names(cvst))){
 stacked_cvst <- stacked_cvst[stacked_cvst$type != "CONTROL_FUNGICIDE_TREMOR", ]
 stacked_cvst$color <- "black"
 
+# Add cumulative biomass column for hurdle model analyses
+
+#### --------
+
 # Statistical tests for biomass increase for individual species
 
 # Tweedie distriobution
@@ -344,6 +343,33 @@ for (name in 1:length(names(cvst))){
   #sp_data <- 1000*cvst[[nm]]
   sp_stack <- stack(as.data.frame(sp_data))
   sp_stack$block <- rownames(sp_data)
+  
+  # cbind binomial model
+  # glm(cbind(values, 1 - values) ~ Temperature, 
+  #     data=temp, family =binomial, Ntrials=n)
+  # 
+  # glm(cbind(round(values*100,0), round(values*100,0))~ind, family="binomial", data = sp_stack)
+  # sp_stack <- round(sp_stack$values*100,0)
+  
+  # Hurdle model
+  
+  # mod.hurdle <- hurdle(y ~ x, dist = "beta", 
+  #                      zero.dist = "binomial")
+  y <- sp_stack$values; x <- sp_stack$ind
+  # summary(VGAM::vglm(y[y > 0] ~ x[y > 0], family = Beta()))
+  
+  # If we assume that we dont know anything about 0's
+  mod.beta <- betareg(formula = y[y>0] ~ x[y>0])
+  pval <- summary(mod.beta)$coefficients$mean [2,4]
+  
+  mod.bin  <- glm(I(y == 0) ~ x, family = binomial)
+  print(paste("Bin", round(summary(mod.bin)$coefficients[2,4],3)))
+  
+  plot(mod.beta)
+  
+  
+# plot(mod.bin)
+  # plot(mod.beta)
   
   #treatment - control
   # dd <- data.frame(diftc = c(sp_data[,2] - sp_data[,1]), comp = names(cvst)[[name]])
@@ -438,12 +464,12 @@ for (name in 1:length(names(cvst))){
   # sp_stack$values <- predict(valuesBCMod, 
   #                            sp_stack$values)
   
-  f0 <- lmer(log(values+1)~(1|block),
-             data = sp_stack)
-  f1 <- lmer(log(values+1)~ind+ (1|block),
-               data = sp_stack)
-  pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
-  print(pval)
+  # f0 <- lmer(log(values+1)~(1|block),
+  #            data = sp_stack)
+  # f1 <- lmer(log(values+1)~ind+ (1|block),
+  #              data = sp_stack)
+  # pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
+  # print(pval)
   
   
   if (pval <= 0.1){
@@ -555,6 +581,25 @@ p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   xlab("") + 
   ylab("")
 p1
+# dev.off()
+
+# No lines but with bars
+# png("figs/fig3b.png",width=1200, height = 1200)
+p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
+             aes(x = ind, y= values)) +
+  facet_grid(~spec~comb, scales = "free") +
+  geom_point(cex = 3, colour = "grey80") + theme_bw() +
+  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
+        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+        strip.text = element_text(size=20),
+        legend.justification=c(0.5,0.5),
+        legend.position="bottom")+
+  xlab("") +
+  ylab("")
+p1 + stat_summary(fun.data=mean_sdl, color = "red",
+                  geom="errorbar",
+                  width=0.2, lwd=1.5)
+  
 # dev.off()
 
 #png("figs/fig3.png",width=1200, height = 1200)

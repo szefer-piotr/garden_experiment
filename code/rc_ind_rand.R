@@ -23,20 +23,22 @@
 
 # Datasets: plant_mat.txt, plant_mat_all.txt, WNGtreat.txt
 
-path <- "C:\\Users\\Piotr Szefer\\Desktop\\Work\\garden experiment\\datasets\\randomizations"
-setwd(path)
-rands <- 99   # sets the number of iterations for the randomizations
-accu <- 0.001 # sets the accuracy at which biomass increases during assembly
+# path <- "C:\\Users\\Piotr Szefer\\Desktop\\Work\\garden experiment\\datasets\\randomizations"
+# setwd(path)
+rands <- 999   # sets the number of iterations for the randomizations
+accu <- 0.1 # sets the accuracy at which biomass increases during assembly
+# 0.1 is a minimum viable individual with dbh 1cm found.
+
 ## 1a. Read the data
 ### Community matrix
-plant_mat <- read.table("plant_mat.txt")
-plant_mat_all <- read.table("plant_mat_all.txt")
+plant_mat <- read.table("datasets/supplementary/plant_mat.txt")
+plant_mat_all <- read.table("datasets/supplementary/plant_mat_all.txt")
 
 ### All possible paorwise comparisons of plots
 #all_pairs <- read.table("all_pairs_trees.txt")
 #colnames(all_pairs) <- c("P1","P2")
 ### Treatments
-WNGtreat <- read.table("WNGtreat.txt")
+WNGtreat <- read.table("datasets/wng_main_test.txt")
 
 ####
 # Install necessary packages  ----
@@ -61,8 +63,8 @@ assemble <- function(spec_patterns, bio_patterns, plot_name, plant_names,
   # plot1 - character string with the name of first 
   # bio patterns biomass rounded to 3 decimal points
   # plant_names names of the plant in the whole community
-  # rel_probs is numer of incidences divided by all the plots
-  # rel_plant biomass ir relative biomass of each speceis within the community
+  # rel_probs is numer of incidence divided by the number of plots
+  # rel_plant biomass is a relative biomass of each speceis within the community
   
   spec <- spec_patterns[names(spec_patterns) == plot_name]
   bio <- bio_patterns[names(bio_patterns) == plot_name]
@@ -122,7 +124,6 @@ contingencyTable2 <- function(dataset, ROW, COL, VALUE){
 }
 
 ### Raup-Crick function
-
 RCrands <- function(p1, p2, plant_mat,
                     empiricalBCval,
                     rands=10, accu=0.1){
@@ -130,6 +131,9 @@ RCrands <- function(p1, p2, plant_mat,
   # 1 Calculate parameters for randomizations
   spec_patterns <- rowSums(plant_mat > 0)
   bio_patterns <- round(rowSums(plant_mat),-log(accu)/log(10))
+  
+  if (accu == 1) {bio_patterns <- ceiling(bio_patterns)}
+  
   rel_biomass <- colSums(plant_mat)/sum(colSums(plant_mat))
   probs <- round(colSums(plant_mat>0)/dim(plant_mat)[1],3)
   rel_probs <- probs/sum(probs) # relative probabilities
@@ -186,20 +190,19 @@ getEmpiricalBC <- function(p1,p2,empiricalBC){
 # 2. Pairwise comparisons
 
 # Create directory
-dir.create(file.path(path, "trees_assembly"))
-setwd("./trees_assembly")
+dir.create("datasets/trees_assembly")
 
 ## Onle these interests me. Subset the plant_mat matrix so that it contains only
 ## Controll and the other treatment. I need to split the dataset into smaller
 ## datasets
 
-trtPairs <- expand.grid(unique(WNGtreat$TREATMENT),unique(WNGtreat$TREATMENT))
+trtPairs <- expand.grid(unique(WNGtreat$TREAT),unique(WNGtreat$TREAT))
 colnames(trtPairs) <- c("trt1", "trt2")
 trtPairs <- trtPairs[trtPairs$trt1 != trtPairs$trt2, ]
 trtPairs$trt1 <- as.character(trtPairs$trt1)
 trtPairs$trt2 <- as.character(trtPairs$trt2)
 trtPairs <- trtPairs[!duplicated(t(apply(trtPairs, 1, sort))),]
-WNGtreat$TREATMENT <- as.character(WNGtreat$TREATMENT)
+WNGtreat$TREAT <- as.character(WNGtreat$TREAT)
 WNGtreat$PLOT_CODE <- as.character(WNGtreat$PLOT_CODE)
 # Reduce treatment pairs to onle these which have CONTROL in it
 trtPairs <- trtPairs[trtPairs$trt1 == "CONTROL" | trtPairs$trt2 == "CONTROL", ]
@@ -212,12 +215,12 @@ trtPairs <- rbind(trtPairs[1:2,1:2],
 
 ## SUBSETTING STARTS HERE----
 
-# comb = 1 # for testing procedures inside the function
+#comb = 1 # for testing procedures inside the function
 
 randomization <- function(plant_mat){
   for (comb in 1:dim(trtPairs)[1]){
     # use row from trtPairs
-    rn <- rownames(WNGtreat[(WNGtreat$TREATMENT %in% c(trtPairs$trt1[comb],
+    rn <- rownames(WNGtreat[(WNGtreat$TREAT %in% c(trtPairs$trt1[comb],
                                                        trtPairs$trt2[comb])),])
     print(c(trtPairs$trt1[comb],trtPairs$trt2[comb]))
     
@@ -231,7 +234,7 @@ randomization <- function(plant_mat){
     
     # Subset the trestment data
     sub_treat <- WNGtreat[rownames(WNGtreat) %in% rn,]
-    sub_treat$TREATMENT <- as.character(sub_treat$TREATMENT)
+    sub_treat$TREAT <- as.character(sub_treat$TREAT)
     sub_treat$PLOT_CODE <- as.character(sub_treat$PLOT_CODE)
     sub_treat$GARDEN <- as.character(sub_treat$GARDEN)
     
@@ -282,7 +285,7 @@ randomization <- function(plant_mat){
     }
     # Save the comparison resulting matrix
     
-    write.table(RCmat, paste("mat_",trtPairs$trt1[comb], "_",
+    write.table(RCmat, paste("datasets/trees_assembly/mat_",trtPairs$trt1[comb], "_",
                              trtPairs$trt2[comb],
                              ".txt",sep=""))
   }
@@ -292,27 +295,25 @@ randomization(plant_mat)
 
 ## Comparisons for the whole community
 
-setwd("..")
-dir.create(file.path(path, "all_assembly"))
-setwd("./all_assembly")
-
-randomization(plant_mat_all)
+# setwd("..")
+# dir.create(file.path(path, "all_assembly"))
+# setwd("./all_assembly")
+# 
+# randomization(plant_mat_all)
 
 ##############  PROCESS RESULTS OF THE RANDOMIZATION -----
 
 plotMeMyGraphs <- function(path){
   
-  setwd(path)
-  
   # Check all the txt files with a word CONTROL in them (RC matrices)
-  file_names <- list.files()[str_detect(list.files(), "CONTROL")]
+  file_names <- list.files(path)[str_detect(list.files(path), "CONTROL")]
   
   # Data for facets and to store results, mean, lose, upse, type
   dataRC_facets <- data.frame()
   
   # For each file name calculate mean values of inter treatmet comparisons
   for(file in 1:length(file_names)) {
-    rcmatrix <- read.table(file_names[file])
+    rcmatrix <- read.table(paste(path,"/",file_names[file], sep =""))
     
     # Fill the whole matrix with values from th elower triangle
     rcmatrix[upper.tri(rcmatrix)] <- rcmatrix[lower.tri(rcmatrix)]
@@ -326,14 +327,14 @@ plotMeMyGraphs <- function(path){
     
     for (row in 1:dim(sub_treat)[1]){
       plt <- sub_treat$PLOT_CODE[row]
-      trt <- sub_treat$TREATMENT[row]
+      trt <- sub_treat$TREAT[row]
       grd <- sub_treat$GARDEN[row]
       
       # Print current row
       print(c(plt,trt,grd))
       
       # Other plots belonging to the same treatment
-      trtPlots <- as.character(sub_treat[sub_treat$TREATMENT == trt, ]$PLOT_CODE)
+      trtPlots <- as.character(sub_treat[sub_treat$TREAT == trt, ]$PLOT_CODE)
       
       print(trtPlots)
       
@@ -417,15 +418,8 @@ plotMeMyGraphs <- function(path){
 
 # Read the data from the file ------
 
-setwd("..")
-setwd("all_assembly")
-path1 <- getwd()
-setwd("..")
-setwd("trees_assembly")
-path2 <- getwd() 
-
+path1 <- c("datasets/trees_assembly")
 plot1 <- plotMeMyGraphs(path1)
-windows(800,600)
 plot1$plot
 
 plot2 <- plotMeMyGraphs(path2)
@@ -438,8 +432,62 @@ plot1
 plot2
 dev.off()
 
-# DBH sampling
-maindbh <- read.table("datasets/supplementary/wng_main.txt", header = T)
-maindbh <- maindbh[maindbh$CODE != "WG1P6", ]#remove insecticide
+# DBH sampling -----
+source("code/AX_leaf_frames_analysis_data_processing.R")
+basal_data <- datasetW[!(datasetW$BASAL_A %in% c(NA, 0)), ]
+dim(basal_data)
 
-# structure data such that I can 
+# Median weight for a tree individual
+min(basal_data$WEIGHT/basal_data$NO_STEMS, na.rm = T)
+
+bacols <- grep("DBH", names(basal_data))
+cols_to_save <- c("CODE","PLOT","BLOCK","TREAT",
+                  "SPEC","SP_CODE","LIFE.FORM")
+
+dbh_data <- data.frame()
+for (row in 1:dim(basal_data)[1]){
+  dbh_column <- basal_data[row, bacols] 
+  ba_column <- 0.00007854*(dbh_column^2)*100*100 #in cm^2
+  subset <- cbind(t(ba_column), basal_data[row, cols_to_save])
+  names(subset) <- c("basal", tolower(cols_to_save))
+  dbh_data <- rbind(dbh_data, subset)
+}
+
+
+dbh_data <- dbh_data[complete.cases(dbh_data), ]
+dbh_data$code <- as.character(dbh_data$code)
+
+# Randomization
+# Summaries to determine constraints
+# Species patterns
+tapply(dbh_data$sp_code, dbh_data$code, function(x){length(unique(x))})
+
+### Assemble function
+# assembledbh <- function(spec_patterns, bio_patterns, plot_name, plant_names,
+#                      rel_probs, rel_plant_biomass){
+#   
+#   # Spec patterns are the number of species for each of the plot
+#   # plot1 - character string with the name of first 
+#   # bio patterns biomass rounded to 3 decimal points
+#   # plant_names names of the plant in the whole community
+#   # rel_probs is numer of incidence divided by the number of plots
+#   # rel_plant biomass is a relative biomass of each speceis within the community
+#   
+#   spec <- spec_patterns[names(spec_patterns) == plot_name]
+#   bio <- bio_patterns[names(bio_patterns) == plot_name]
+#   
+#   # Sample given number of species
+#   S1 <- sample(plant_names,spec,replace=FALSE,prob = rel_probs)
+#   
+#   # Probabilities of observing one unit of biomass for a given community
+#   sub_rel_plant_biomass <- rel_plant_biomass[S1]/sum(rel_plant_biomass[S1])
+#   
+#   # Assembling the plot
+#   initS1 <- S1 # initiate minimal biomass
+#   iterS1 <- sample(S1, ((bio/accuracy)-spec), TRUE, 
+#                    prob=sub_rel_plant_biomass)
+#   sampleS1 <- c(initS1, iterS1)
+#   randCom1 <- table(sampleS1)*accuracy
+#   return(list(COM = randCom1))
+# }
+
