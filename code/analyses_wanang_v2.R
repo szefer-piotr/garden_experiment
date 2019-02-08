@@ -200,6 +200,7 @@ ratree <- main[order(main$CODE), ] # for the whole community
 ratree$WEIGHT <-  stack(tapply(tree$WEIGHT, tree$CODE, function(x){x/sum(x)}))$value
 ratree$WEIGHT <-  stack(tapply(main$WEIGHT, main$CODE, function(x){x/sum(x)}))$value
 
+# comb_no <- 1
 for (comb_no in 1:dim(comb)[1]){
   
   # step 1 subset the dataset to a given pair of treatments
@@ -229,6 +230,9 @@ for (comb_no in 1:dim(comb)[1]){
   sp_present <- sub_table[,c(comb[comb_no,]$Var1,comb[comb_no,]$Var2)]
   sp_present <- sp_present[rowSums(sp_present) != 0, ]
   
+  trt1 <- comb[comb_no,]$Var1
+  trt2 <- comb[comb_no,]$Var2
+  
   entry <- list(which(sp_present[,1] == 0), # zero at treatment
                 which(sp_present[,2] == 0)) # zero at control
   
@@ -245,8 +249,11 @@ for (comb_no in 1:dim(comb)[1]){
   #tree_ct <- contingencyTable2(tree, "SP_CODE", "TREAT", "WEIGHT")
   
   # Which species occur at leas "threshold" times
-  threshold <- 7
-  selected <- names(which(rowSums(sub_table) >= threshold))
+  threshold <- 3
+  cond1 <- sub_table[,colnames(sub_table) == trt1] >= threshold
+  cond2 <- sub_table[,colnames(sub_table) == trt2] >= threshold
+  selected <- rownames(sub_table[(cond1 & cond2), ])
+  
   selected_subset <- subset[subset$SP_CODE %in% selected, ]
   
   # Dataset list C vs I
@@ -365,10 +372,7 @@ for (name in 1:length(names(cvst))){
   mod.bin  <- glm(I(y == 0) ~ x, family = binomial)
   print(paste("Bin", round(summary(mod.bin)$coefficients[2,4],3)))
   
-  plot(mod.beta)
-  
-  
-# plot(mod.bin)
+  # plot(mod.bin)
   # plot(mod.beta)
   
   #treatment - control
@@ -471,17 +475,27 @@ for (name in 1:length(names(cvst))){
   # pval <- anova(f0, f1)$`Pr(>Chisq)`[2]
   # print(pval)
   
+  # For summary plot
+  # cols <- c()
+  # if(pval < 0.1){
+  #   cols <- c("black", "orange")
+  # }
+  # if(pval < 0.05){
+  #   cols <- c("black", "red")
+  # } else{cols <- c("black", "grey40")}
+  # colours <- c(colours, cols)
   
   if (pval <= 0.1){
     colorval <- "orange"
   }
   if (pval <= 0.05){
     colorval <- "red"
-  } 
+  }
   if (pval > 0.1){
     colorval <- "grey30"
   }
   stacked_cvst[stacked_cvst$type == (names(cvst)[[name]]), ]$color <- colorval
+  
 }
 
 # difference correlations
@@ -568,7 +582,7 @@ for (name in 1:length(names(cvst))){
 # p1
 
 # Siimple lines
-# png("figs/fig3b.png",width=1200, height = 1200)
+png("figs/fig3b.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   geom_line(size = 2, alpha=0.15) +
   facet_grid(spec ~ comb, scales = "free") +
@@ -581,14 +595,37 @@ p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
   xlab("") + 
   ylab("")
 p1
-# dev.off()
+dev.off()
+
+colours <- tapply(stacked_cvst$color, stacked_cvst$type, unique)
 
 # No lines but with bars
-# png("figs/fig3b.png",width=1200, height = 1200)
+
+# Calculate beta confidence intervals
+# Negative log likelihood for the beta distribution
+cibeta <- function(x){
+  x <- x[x>0]
+  nloglikbeta = function(mu, sig) {
+    alpha = mu^2*(1-mu)/sig^2-mu
+    beta = alpha*(1/mu-1)
+    -sum(dbeta(x, alpha, beta, log=TRUE))
+  }
+  est = mle(nloglikbeta, start=list(mu=mean(x), sig=sd(x)))
+  cest <- confint(est)
+  res <- cest[1,]
+  mi <- res[1]
+  ma <- res[2]
+  mu <- est@coef[1]
+  return(data.frame(ymin=mi,ymax=ma,y=mu))
+}
+
+# my.fun<-function(x){data.frame(ymin=min(x),ymax=max(x),y=mean(x))}
+
+png("figs/fig3b.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
              aes(x = ind, y= values)) +
-  facet_grid(~spec~comb, scales = "free") +
-  geom_point(cex = 3, colour = "grey80") + theme_bw() +
+  facet_grid(spec~comb, scales = "free") +
+  geom_jitter(cex = 3, width=0.05 ,colour = "grey80") + theme_bw() +
   theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
         axis.text.y=element_text(angle=0, size=10, hjust=0.5),
         strip.text = element_text(size=20),
@@ -596,11 +633,13 @@ p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,],
         legend.position="bottom")+
   xlab("") +
   ylab("")
-p1 + stat_summary(fun.data=mean_sdl, color = "red",
-                  geom="errorbar",
-                  width=0.2, lwd=1.5)
-  
-# dev.off()
+# p1 + stat_summary(fun.data=my.fun, color = "grey30",
+#                   geom="pointrange",
+#                   position = position_dodge(width = 0.90))  
+p1 + stat_summary(fun.data=cibeta, color = "grey30",
+                  geom="pointrange",cex=2,
+                  position = position_dodge(width = 0.90))  
+dev.off()
 
 #png("figs/fig3.png",width=1200, height = 1200)
 # p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
@@ -841,8 +880,10 @@ orditorp(m, display = "species", select = selection, col = "grey50",
 with(test, points(m, display = "sites", col = colvec[TREAT],
                       scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
 # Vectors
-text(m, display="bp", col="darkcyan", lwd=2, 
-     cex = 2, scaling = scl)
+text(m, display="bp", select = "insecticide", col="darkcyan", lwd=2, 
+     cex = 1.7, scaling = scl)
+#text(m$CCA$biplot["insecticide", c(1,2)], '*', cex = 2, col="darkcyan")
+
 # Legend
 with(test, legend("topright", legend = levels(TREAT), bty = "n",
                       col = colvec, pch = 21, pt.bg = colvec))
