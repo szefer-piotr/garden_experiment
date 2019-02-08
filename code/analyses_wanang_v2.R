@@ -621,9 +621,8 @@ cibeta <- function(x){
 
 # my.fun<-function(x){data.frame(ymin=min(x),ymax=max(x),y=mean(x))}
 
-png("figs/fig3b.png",width=1200, height = 1200)
 p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
-             aes(x = ind, y= values)) +
+             aes(x = ind, y= values, colour = block)) +
   facet_grid(spec~comb, scales = "free") +
   geom_jitter(cex = 3, width=0.05 ,colour = "grey80") + theme_bw() +
   theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
@@ -637,7 +636,27 @@ p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,],
 #                   geom="pointrange",
 #                   position = position_dodge(width = 0.90))  
 p1 + stat_summary(fun.data=cibeta, color = "grey30",
-                  geom="pointrange",cex=2,
+                  geom="pointrange",cex=0.8,lwd=2,
+                  position = position_dodge(width = 0.90))  
+
+# Coloured gardens
+png("figs/fig3b.png",width=1200, height = 1200)
+p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
+             aes(x = ind, y= values, colour = block)) +
+  facet_grid(spec~comb, scales = "free") +
+  geom_jitter(cex = 3, width=0.05, alpha=0.25) + theme_bw() +
+  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
+        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+        strip.text = element_text(size=20),
+        legend.justification=c(0.5,0.5),
+        legend.position="bottom")+
+  xlab("") +
+  ylab("")
+# p1 + stat_summary(fun.data=my.fun, color = "grey30",
+#                   geom="pointrange",
+#                   position = position_dodge(width = 0.90))  
+p1 + stat_summary(fun.data=cibeta, color = "grey30",
+                  geom="pointrange",cex=0.8,lwd=2,
                   position = position_dodge(width = 0.90))  
 dev.off()
 
