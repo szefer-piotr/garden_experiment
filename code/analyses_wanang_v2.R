@@ -603,6 +603,7 @@ colours <- tapply(stacked_cvst$color, stacked_cvst$type, unique)
 
 # Calculate beta confidence intervals
 # Negative log likelihood for the beta distribution
+library(stats4)
 cibeta <- function(x){
   x <- x[x>0]
   nloglikbeta = function(mu, sig) {
