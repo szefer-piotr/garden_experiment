@@ -1261,6 +1261,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 # letters and style
 
+
 ## Tukey tests ------
 library(multcompView)
 library(lsmeans)
@@ -1330,6 +1331,7 @@ png("figs/figXtukey.png", width=800, height = 300)
 multiplot(p1, p2, p3, cols=3)
 dev.off()
 
+
 # All traits plots -----
 mainC <- main[main$TREAT == "CONTROL", ]
 ggplot(mainC, aes(y=LDMC, x=fct_reorder(SP_CODE, 
@@ -1344,6 +1346,7 @@ ggplot(main, aes(y=SLA,
                  x=fct_reorder(SP_CODE, 
                                SLA,
                                fun = median, .desc =TRUE))) + geom_boxplot()
+
 
 
 # Ind sp traits vs treatment ----
@@ -1373,6 +1376,29 @@ ggplot(sp_tr, aes(x = TREAT, y= HERB, color=TREAT)) +
                                    hjust = 1,
                                    vjust = 0.5,
                                    size = 5))
+
+
+# Traits and RDA axis correlations -----
+tvsrda <- main[main$TREAT == "CONTROL", ]
+tvsrda$SP_CODE <- as.character(tvsrda$SP_CODE) 
+
+
+ggplot(tvsrda, 
+       aes(x = fct_reorder(SP_CODE, LDMC, 
+                           fun = median, 
+                           .desc =TRUE),
+           y = LDMC)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+boxplot(HERB~SP_CODE, data=tvsrda)
+
+
+axisval <- m$CCA$v[,1]
+tvsrda$rda <- axisval[tvsrda$SP_CODE]
+ggplot(tvsrda, aes(x = SLA, y = rda)) +
+  geom_point() +
+  geom_smooth(method="lm")
 
 
 # Trying with ordisurf ------
@@ -1418,3 +1444,5 @@ dat <- as.data.frame(cbind(sp_means, x))
 ggplot(dat, aes(y=sp_means,x=x)) + 
   geom_point() + 
   geom_smooth(method = "lm")
+
+
