@@ -367,10 +367,12 @@ for (name in 1:length(names(cvst))){
   
   # If we assume that we dont know anything about 0's
   mod.beta <- betareg(formula = y[y>0] ~ x[y>0])
-  pval <- summary(mod.beta)$coefficients$mean [2,4]
+  sumsum <- summary(mod.beta)
+  pval <- sumsum$coefficients$mean[2,4]
   
   mod.bin  <- glm(I(y == 0) ~ x, family = binomial)
   print(paste("Bin", round(summary(mod.bin)$coefficients[2,4],3)))
+  print(sumsum)
   
   # plot(mod.bin)
   # plot(mod.beta)
