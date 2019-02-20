@@ -291,7 +291,10 @@ randomization <- function(plant_mat){
   }
 }
 
+# Run this again!!! 
 randomization(plant_mat)
+
+randomization(plant_mat_all)
 
 ## Comparisons for the whole community
 
@@ -387,21 +390,67 @@ plotMeMyGraphs <- function(path){
   dataRC_facets_plot$type <- gsub(".txt", "", dataRC_facets_plot$type)
   dataRC_facets_plot$type <- gsub("_", " vs ", dataRC_facets_plot$type)
   
-  pl <- ggplot() +
-    geom_errorbar(data=dataRC_facets_plot,
-                  mapping=aes(x=treat, ymin=lose, ymax=upse), width=0.2,
-                  size=1, color="gray60") + ylab("Within treatment dissimilarity (RC)") +
+  # pl <- ggplot() +
+  #   geom_errorbar(data=dataRC_facets_plot,
+  #                 mapping=aes(x=treat, ymin=lose, ymax=upse), width=0.2,
+  #                 size=1, color="gray60") + ylab("Within treatment dissimilarity (RC)") +
+  #   geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey60") +
+  #   geom_point(data=dataRC_facets_plot, mapping=aes(x=treat, y=meanRC), size=4, shape=21,
+  #              fill="black")+
+  #   ylim(-1,1) + geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
+  #   facet_wrap(~type, scales="free", drop=TRUE) + theme_bw()+
+  #   theme(axis.text.x=element_text(angle=90, hjust=1))
+  # 
+  
+  
+  # Different plot
+  unique(dataRC_facets$treat)
+  dataRC_facets$type <- factor(dataRC_facets$type, 
+                               levels = c("mat_FUNGICIDE_CONTROL.txt",
+                                          "mat_INSECTICIDE_CONTROL.txt",
+                                          "mat_CONTROL_PREDATOR.txt",
+                                          "mat_CONTROL_WEEVIL25.txt",
+                                          "mat_CONTROL_WEEVIL125.txt"
+                                          ))
+  
+  dataRC_facets$type <- factor(dataRC_facets$type, 
+                               labels = c("C vs. F",
+                                          "C vs. I",
+                                          "C vs. P",
+                                          "C vs. H1",
+                                          "C vs. H2"
+                               ))
+  
+  unique(dataRC_facets$treat)
+  dataRC_facets$treat <- factor(dataRC_facets$treat, 
+                               labels = c("C",
+                                          "P",
+                                          "H2",
+                                          "H1",
+                                          "F",
+                                          "I"
+                               ))
+  
+  colours <- c("grey30","grey30","grey30","red", "grey30", "red",
+               "grey30","grey30","grey30","grey30")
+  
+  pl <- ggplot(dataRC_facets,aes(x=treat, y=meanRC)) +
+    geom_jitter(colour = "grey80", width = 0.1, size = 2) +
     geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey60") +
-    geom_point(data=dataRC_facets_plot, mapping=aes(x=treat, y=meanRC), size=4, shape=21,
-               fill="black")+
-    ylim(-1,1) + geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
-    facet_wrap(~type, scales="free", drop=TRUE) + theme_bw()+
-    theme(axis.text.x=element_text(angle=90, hjust=1))
+    ylim(-1,1) + 
+    geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
+    facet_wrap(~type, scales="free", drop=TRUE) + 
+    theme_bw() + 
+    ylab("Within treatment dissimilarity (RC)") + xlab("")+
+    stat_summary(fun.data=mean_sdl, color = colours,
+                 geom="pointrange",
+                 position = position_dodge(width = 0.90)) 
   
+    pl
+
+    
+    
   #windows(800,600)
-  
-  pl
-  
   # Test for significance
   
   dataRC_facets$ftreat <- as.factor(dataRC_facets$treat)
@@ -418,9 +467,11 @@ plotMeMyGraphs <- function(path){
 
 # Read the data from the file ------
 
-path1 <- c("datasets/trees_assembly")
+path <- c("datasets/trees_assembly")
 plot1 <- plotMeMyGraphs(path1)
+png("figs/FigS4.png", width = 600, height=400)
 plot1$plot
+dev.off()
 
 plot2 <- plotMeMyGraphs(path2)
 windows(800,600)

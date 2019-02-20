@@ -200,7 +200,7 @@ ratree <- main[order(main$CODE), ] # for the whole community
 ratree$WEIGHT <-  stack(tapply(tree$WEIGHT, tree$CODE, function(x){x/sum(x)}))$value
 ratree$WEIGHT <-  stack(tapply(main$WEIGHT, main$CODE, function(x){x/sum(x)}))$value
 
-# comb_no <- 1
+#comb_no <- 1
 for (comb_no in 1:dim(comb)[1]){
   
   # step 1 subset the dataset to a given pair of treatments
@@ -250,11 +250,20 @@ for (comb_no in 1:dim(comb)[1]){
   
   # Which species occur at leas "threshold" times
   threshold <- 3
+  abund <- 0.05
+  
   cond1 <- sub_table[,colnames(sub_table) == trt1] >= threshold
   cond2 <- sub_table[,colnames(sub_table) == trt2] >= threshold
   selected <- rownames(sub_table[(cond1 & cond2), ])
   
   selected_subset <- subset[subset$SP_CODE %in% selected, ]
+  
+  # check the average abundance (accross controll and treatment)
+  av_ab <- c(tapply(selected_subset$WEIGHT, 
+                  selected_subset$SP_CODE, mean))
+  av_ab <- av_ab[complete.cases(av_ab)]
+  ab <- names(av_ab[av_ab > abund])
+  selected <- ab
   
   # Dataset list C vs I
   for (spec in selected){
@@ -346,7 +355,7 @@ diff_dat <- data.frame()
 # name <- 13
 for (name in 1:length(names(cvst))){
   sp_data <- cvst[[name]]
-  print(names(cvst)[[name]])
+  #print(names(cvst)[[name]])
   #sp_data <- 1000*cvst[[nm]]
   sp_stack <- stack(as.data.frame(sp_data))
   sp_stack$block <- rownames(sp_data)
@@ -371,8 +380,8 @@ for (name in 1:length(names(cvst))){
   pval <- sumsum$coefficients$mean[2,4]
   
   mod.bin  <- glm(I(y == 0) ~ x, family = binomial)
-  print(paste("Bin", round(summary(mod.bin)$coefficients[2,4],3)))
-  print(sumsum)
+  # print(paste("Bin", round(summary(mod.bin)$coefficients[2,4],3)))
+  #print(sumsum)
   
   # plot(mod.bin)
   # plot(mod.beta)
@@ -487,16 +496,17 @@ for (name in 1:length(names(cvst))){
   # } else{cols <- c("black", "grey40")}
   # colours <- c(colours, cols)
   
-  if (pval <= 0.1){
-    colorval <- "orange"
-  }
-  if (pval <= 0.05){
-    colorval <- "red"
-  }
-  if (pval > 0.1){
-    colorval <- "grey30"
-  }
-  stacked_cvst[stacked_cvst$type == (names(cvst)[[name]]), ]$color <- colorval
+  # if (pval <= 0.1){
+  #   colorval <- "orange"
+  # }
+  # if (pval <= 0.05){
+  #   colorval <- "red"
+  # }
+  # if (pval > 0.1){
+  #   colorval <- "grey30"
+  # }
+  print(paste(names(cvst)[[name]], pval))
+  # stacked_cvst[stacked_cvst$type == (names(cvst)[[name]]), ]$color <- colorval
   
 }
 
@@ -584,22 +594,22 @@ for (name in 1:length(names(cvst))){
 # p1
 
 # Siimple lines
-png("figs/fig3b.png",width=1200, height = 1200)
-p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
-  geom_line(size = 2, alpha=0.15) +
-  facet_grid(spec ~ comb, scales = "free") +
-  geom_point(cex = 3, colour = stacked_cvst$color) + theme_bw() + 
-  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
-        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
-        strip.text = element_text(size=20),
-        legend.justification=c(0.5,0.5), 
-        legend.position="bottom")+
-  xlab("") + 
-  ylab("")
-p1
-dev.off()
-
-colours <- tapply(stacked_cvst$color, stacked_cvst$type, unique)
+# png("figs/fig3b.png",width=1200, height = 1200)
+# p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
+#   geom_line(size = 2, alpha=0.15) +
+#   facet_grid(spec ~ comb, scales = "free") +
+#   geom_point(cex = 3, colour = stacked_cvst$color) + theme_bw() + 
+#   theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+#         strip.text = element_text(size=20),
+#         legend.justification=c(0.5,0.5), 
+#         legend.position="bottom")+
+#   xlab("") + 
+#   ylab("")
+# p1
+# dev.off()
+# 
+# colours <- tapply(stacked_cvst$color, stacked_cvst$type, unique)
 
 # No lines but with bars
 
@@ -613,6 +623,8 @@ cibeta <- function(x){
     beta = alpha*(1/mu-1)
     -sum(dbeta(x, alpha, beta, log=TRUE))
   }
+  # est = mle(nloglikbeta, start=list(mu=mean(x), sig=sd(x)),
+  #           method = "SANN")
   est = mle(nloglikbeta, start=list(mu=mean(x), sig=sd(x)))
   cest <- confint(est)
   res <- cest[1,]
@@ -622,45 +634,70 @@ cibeta <- function(x){
   return(data.frame(ymin=mi,ymax=ma,y=mu))
 }
 
+# Why there is no profile in 
+# test <- stacked_cvst[stacked_cvst$type == "CONTROL_WEEVIL125_MELAMU", ]
+# vv <- test[test$ind == "WEEVIL125",]$values
+# cibeta(vv[vv>0])
+# x <- (vv[vv>0])
+# summary()
+# confint(mle(nloglikbeta, 
+#             start=list(mu=mean(x), sig=sd(x)),
+#             method = "SANN"))
+
 # my.fun<-function(x){data.frame(ymin=min(x),ymax=max(x),y=mean(x))}
 
-p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
-             aes(x = ind, y= values, colour = block)) +
-  facet_grid(spec~comb, scales = "free") +
-  geom_jitter(cex = 3, width=0.05 ,colour = "grey80") + theme_bw() +
-  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
-        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
-        strip.text = element_text(size=20),
-        legend.justification=c(0.5,0.5),
-        legend.position="bottom")+
-  xlab("") +
-  ylab("")
-# p1 + stat_summary(fun.data=my.fun, color = "grey30",
-#                   geom="pointrange",
+# p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
+#              aes(x = ind, y= values, colour = block)) +
+#   facet_grid(spec~comb, scales = "free") +
+#   geom_jitter(cex = 3, width=0.05 ,colour = "grey80") + theme_bw() +
+#   theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+#         strip.text = element_text(size=20),
+#         legend.justification=c(0.5,0.5),
+#         legend.position="bottom")+
+#   xlab("") +
+#   ylab("")
+# # p1 + stat_summary(fun.data=my.fun, color = "grey30",
+# #                   geom="pointrange",
+# #                   position = position_dodge(width = 0.90))  
+# p1 + stat_summary(fun.data=cibeta, color = "grey30",
+#                   geom="pointrange",cex=0.8,lwd=2,
 #                   position = position_dodge(width = 0.90))  
-p1 + stat_summary(fun.data=cibeta, color = "grey30",
-                  geom="pointrange",cex=0.8,lwd=2,
-                  position = position_dodge(width = 0.90))  
+
+stacked_cvst$ind <- factor(stacked_cvst$ind, 
+                           labels = c("C", "F", "H2","P","H1","I"))
 
 # Coloured gardens
 png("figs/fig3b.png",width=1200, height = 1200)
+
 p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
              aes(x = ind, y= values, colour = block)) +
   facet_grid(spec~comb, scales = "free") +
-  geom_jitter(cex = 3, width=0.05, alpha=0.25) + theme_bw() +
-  theme(axis.text.x=element_text(angle=0, size=10, hjust=0.5),
-        axis.text.y=element_text(angle=0, size=10, hjust=0.5),
+  geom_jitter(cex = 6, width=0.05, alpha=0.25) + theme_bw() +
+  theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
+        axis.text.y=element_text(angle=0, size=20, hjust=0.5),
         strip.text = element_text(size=20),
         legend.justification=c(0.5,0.5),
-        legend.position="bottom")+
+        legend.position="bottom",
+        legend.text=element_text(size=20),
+        legend.title=element_blank())+
   xlab("") +
   ylab("")
 # p1 + stat_summary(fun.data=my.fun, color = "grey30",
 #                   geom="pointrange",
-#                   position = position_dodge(width = 0.90))  
-p1 + stat_summary(fun.data=cibeta, color = "grey30",
-                  geom="pointrange",cex=0.8,lwd=2,
-                  position = position_dodge(width = 0.90))  
+#                   position = position_dodge(width = 0.90))
+
+colours <- c("gray40","gray40","gray40","gray40","gray40","gray40","gray40","red","gray40","gray40",
+             "gray40", "orange","gray40","gray40",
+             "gray40","gray40","gray40","gray40","gray40","gray40","gray40","gray40","gray40","gray40",
+             "gray40","gray40","gray40","gray40","gray40","gray40","gray40","red","gray40","gray40",
+             "gray40","gray40","gray40","gray40",
+             "gray40","gray40")
+length(colours)
+
+p1 + stat_summary(fun.data=cibeta, color = colours,
+                  geom="pointrange",cex=1.5,lwd=4,
+                  position = position_dodge(width = 0.90))
 dev.off()
 
 #png("figs/fig3.png",width=1200, height = 1200)
