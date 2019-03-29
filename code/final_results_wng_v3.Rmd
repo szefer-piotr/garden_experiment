@@ -1,0 +1,394 @@
+---
+title: "Results WNG (final)"
+author: "Piotr Szefer"
+date: "July 5, 2018"
+output: pdf_document
+---
+
+```{r global.options, include = TRUE, echo=FALSE}
+knitr::opts_chunk$set(
+    fig.align   = 'center',
+    fig.height  = 3,
+    echo        = FALSE,
+    message     = FALSE,
+    warning     = FALSE)
+```
+
+# Community composition
+
+## RDA
+
+```{r, fig.width=8,fig.height=4}
+source("C:/Users/Piotr Szefer/Desktop/Work/garden experiment/code/rda_plots.R")
+
+# RDA plots and tests
+library(cowplot)
+plot_grid(pAll, pTree)
+# pAll
+# pTree
+```
+Fig. Proportional data, full biomass block covariate, standarization by samples.
+```{r}
+library(knitr)
+kable(p1axis, caption = "Permutation test results for the whole community")
+kable(p2axis, caption = "Permutation test results for all tree species")
+```
+
+```{r, echo = FALSE, include = FALSE, message=FALSE, warning=FALSE}
+#source("C:\\Users\\Piotr Szefer\\Desktop\\Work\\garden experiment\\code\\Data_Processing_Script_v2.R")
+
+source("C:\\Users\\Piotr Szefer\\Desktop\\Work\\garden experiment\\code\\Data_Processing_Script_v3.R")
+```
+
+# Community descriptors
+
+## For the whole community and for the tree community
+```{r, fig.height = 6, fig.width=6}
+
+panelData$cols <- rep("grey40", dim(panelData)[1])
+# What is significant and what is marginally significant.
+
+# Get rid of uninformative Simpsons D
+panelData <- panelData[!(panelData$TYPE %in% c("Simpson's D","Simpson's D (Woody plants)")),]
+
+sig <- "red"
+msig <- "orange"
+
+# Whole community
+# summary(l1W) # Biomass Weevil 125
+panelData[(panelData$TYPE == "LN(Biomass)" & panelData$TREAT == "H2"), ]$cols <- sig
+panelData[(panelData$TYPE == "LN(Biomass)" & panelData$TREAT == "P"), ]$cols <- msig
+
+# summary(l2W) # Shannon Insecticide and marginally weevil 25
+panelData[(panelData$TYPE == "Shannon's H" & panelData$TREAT == "I"), ]$cols <- sig
+panelData[(panelData$TYPE == "Shannon's H" & panelData$TREAT == "H1"), ]$cols <- msig
+# summary(l3W) # Species number: Insecticide
+panelData[(panelData$TYPE == "Richness" & panelData$TREAT == "I"), ]$cols <- msig
+# summary(l4W) # Simpsons: Insecticide
+# panelData[(panelData$TYPE == "Simpson's D" & panelData$TREAT == "I"), ]$cols <- sig
+# summary(l5W) # Evenness: marginally insecticide and weevil 25
+panelData[(panelData$TYPE == "Evenness" & panelData$TREAT == "I"), ]$cols <- msig
+panelData[(panelData$TYPE == "Evenness" & panelData$TREAT == "H1"), ]$cols <- msig
+
+# "LN(Biomass) (Woody plants)"
+# "Shannon's H (Woody plants)"
+# "Richness (Woody plants)"
+# "Simpson's D (Woody plants)"
+# "Evenness (Woody plants)"
+# "Number of stems (Woody plants)"
+
+# Trees
+# summary(l1Wt) # Biomass: Weevil 125
+panelData[(panelData$TYPE == "LN(Biomass) (Woody plants)" & panelData$TREAT == "H2"), ]$cols <- sig
+
+# summary(l2Wt) # Shannon: marginally Insecticide
+panelData[(panelData$TYPE == "Shannon's H (Woody plants)" & panelData$TREAT == "I"), ]$cols <- msig
+
+# summary(l3Wt) # Species number: marginally Insecticide and marginially FUNGICIDE
+# panelData[(panelData$TYPE == "Richness (Woody plants)" & panelData$TREAT == "I"), ]$cols <- msig
+panelData[(panelData$TYPE == "Richness (Woody plants)" & panelData$TREAT == "F"), ]$cols <- msig
+
+# summary(l4Wt) # Simpsons: marginally Insecticide
+# panelData[(panelData$TYPE == "Simpson's D (Woody plants)" & panelData$TREAT == "I"), ]$cols <- msig
+# summary(l5Wt) # Evenness: marginally predator
+panelData[(panelData$TYPE == "Evenness (Woody plants)" & panelData$TREAT == "P"), ]$cols <- msig
+
+# summary(l6Wt) # Stems: fungicide, predator and weevil 125
+panelData[(panelData$TYPE == "No. of stems (Woody plants)" & panelData$TREAT == "F"), ]$cols <- sig
+panelData[(panelData$TYPE == "No. of stems (Woody plants)" & panelData$TREAT == "P"), ]$cols <- sig
+panelData[(panelData$TYPE == "No. of stems (Woody plants)" & panelData$TREAT == "H2"), ]$cols <- sig
+
+panelData[(panelData$GARDEN == "WG1" & panelData$TREAT == "I" & panelData$TYPE == "LN(Biomass)"), ]$cols <- "grey80"
+panelData[(panelData$GARDEN == "WG1" & panelData$TYPE == "Richness" & panelData$TREAT == "I"), ]$cols <- "grey80"
+panelData[(panelData$GARDEN == "WG1" & panelData$TYPE == "Richness (Woody plants)" & panelData$TREAT == "I"), ]$cols <- "grey80"
+
+# Plot the panel
+p <- ggplot(panelData, aes(x = TREAT, y = VALUE, group=GARDEN)) + 
+  geom_line(aes(linetype = GARDEN), size = 0.5, alpha=0.15)+
+  geom_jitter(width = 0.05, size=2, 
+              shape = 19, color=panelData$cols)
+p + facet_wrap(~TYPE, scales="free", drop=TRUE) +theme_bw() + 
+  theme(axis.text.x=element_text(angle=0, hjust=0.5),
+        strip.text = element_text(size=8),
+        legend.justification=c(0.5,0.5), 
+        legend.position="bottom")+xlab("")+ylab("")
+```
+
+Fig. 1 Community descriptors showing significant response to the experimental treatments for the whole community and for tree communitites (based on all tree species present in the experimental plots) in Wanang. Red colour represents significant difference at the $\alpha < 0.05$. Orange colour denotes marginal significance $\alpha < 0.1$.
+
+```{r, results='asis'}
+# Test the general significance
+l1W <- lmer(log(BIO)~TREAT + (1|GARDEN), data=AllTestData)
+l2W <- lmer(SW~TREAT + (1|GARDEN), data=AllTestData)
+l3W <- glmer(SPEC_NO~TREAT+(1|GARDEN), data=AllTestData,
+                   family="poisson")
+l4W <- lmer(SIMP~TREAT + (1|GARDEN), data=AllTestData)
+l5W <- lmer(EVEN~TREAT + (1|GARDEN), data=AllTestData)
+
+
+# Test trees
+l1Wt <- lmer(logBio~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l2Wt <- lmer(DivTree~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l3Wt <- glmer(species~TREATMENT+(1|GARDEN), data=TreeTestDataset,
+             family="poisson")
+l4Wt <- lmer(1/invSimp~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l5Wt <- lmer(Evenness~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l6Wt <- glmer(stems~TREATMENT + (1|GARDEN), data=TreeTestDataset,
+              family="poisson")
+
+###################################################
+
+# Insecticide plot removed
+AllTestData <- AllTestData[!(AllTestData$GARDEN == "WG1" & AllTestData$TREAT == "INSECTICIDE"), ]
+
+# Test the general significance
+l1W <- lmer(log(BIO)~TREAT + (1|GARDEN), data=AllTestData)
+l2W <- lmer(SW~TREAT + (1|GARDEN), data=AllTestData)
+l3W <- glmer(SPEC_NO~TREAT+(1|GARDEN), data=AllTestData,
+                   family="poisson")
+l4W <- lmer(SIMP~TREAT + (1|GARDEN), data=AllTestData)
+l5W <- lmer(EVEN~TREAT + (1|GARDEN), data=AllTestData)
+
+TreeTestDataset  <- TreeTestDataset [!(TreeTestDataset $GARDEN == "WG1" & TreeTestDataset $TREAT == "INSECTICIDE"), ]
+
+# Test trees
+l1Wt <- lmer(logBio~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l2Wt <- lmer(DivTree~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l3Wt <- glmer(species~TREATMENT+(1|GARDEN), data=TreeTestDataset,
+             family="poisson")
+l4Wt <- lmer(1/invSimp~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l5Wt <- lmer(Evenness~TREATMENT + (1|GARDEN), data=TreeTestDataset)
+l6Wt <- glmer(stems~TREATMENT + (1|GARDEN), data=TreeTestDataset,
+              family="poisson")
+
+kable(summary(l1W)$coef, digits = 3,caption = "Biomass Weevil 125")
+kable(summary(l2W)$coef, digits = 3,caption = "Shannon Insecticide and marginally weevil 25")
+kable(summary(l3W)$coef, digits = 3,caption = "Species number: Insecticide")
+kable(summary(l4W)$coef, digits = 3,caption = "Simpsons: Insecticide")
+kable(summary(l5W)$coef, digits = 3,caption = "Evenness: marginally insecticide and weevil 25")
+
+kable(summary(l1Wt)$coef, digits = 3, caption = "Results of the linear mixed effect model of the effect of the treatment on the general productivity of the plot for trees")
+kable(summary(l2Wt)$coef, digits = 3, caption = "Results of the linear mixed effect model of the effect of the treatment on the species diversity of the plot for trees")
+kable(summary(l3Wt)$coef, digits = 3, caption = "Results of the linear mixed effect model of the effect of the treatment on the species richness of the plot. Errors were modeled by quasi poisson distribution because of the ovrerdispersion")
+kable(summary(l4Wt)$coef, digits = 3, caption = "Results of the linear mixed effect model of the effect of the treatment on the species richness (Simpson's D) of the plot. Errors were modeled by quasi poisson distribution because of the ovrerdispersion")
+kable(summary(l5Wt)$coef, digits = 3, caption = "Results of the linear mixed effect model of the effect of the treatment on the evenness of the plot")
+kable(summary(l6Wt)$coef, digits = 3, caption = "Results of the linear mixed effect model of the effect of the treatment on the number of stems per plot.Errors were modeled by quasi poisson distribution because of the ovrerdispersion")
+
+```
+
+
+# Community weighted means
+
+## The whole community
+```{r, fig.height = 4, fig.width=5}
+
+# add colours 
+# herb Nothing
+# ldmc Significantlyhigher for I
+panelCWM[(panelCWM$Type == "LDMC" & panelCWM$Treat == "I" ), ]$cols <- sig
+# sla Marginally lower for I
+panelCWM[(panelCWM$Type == "SLA" & panelCWM$Treat == "I" ), ]$cols <- msig
+
+# herbt significantly higher for P and H2
+panelCWM[(panelCWM$Type == "Herbivory (Woody plants)" & panelCWM$Treat == "P" ), ]$cols <- sig
+panelCWM[(panelCWM$Type == "Herbivory (Woody plants)" & panelCWM$Treat == "H2" ), ]$cols <- sig
+
+# ldmct significantly higher I
+panelCWM[(panelCWM$Type == "LDMC (Woody plants)" & panelCWM$Treat == "I" ), ]$cols <- sig
+
+# slat No effect
+
+# EXCLUDED INSECTICIDE PLOT
+panelCWM[(panelCWM$GARDEN == "WG1" & panelCWM$Treat == "I" ), ]$cols <- "grey80"
+
+# Exclude nonsignificant plots
+panelCWMss <- panelCWM[panelCWM$Type %in% c("SLA", "LDMC",
+                              "LDMC (Woody plants)",
+                              "Herbivory (Woody plants)"), ]
+
+# Plots for CWM's (Herbivory, SLA, LDMC)
+cwm <- ggplot(panelCWMss, aes(x = Treat, y = Value, group=GARDEN)) + 
+  geom_line(aes(linetype = GARDEN), size = 0.5, alpha=0.15)+
+  geom_jitter(width = 0.05, size=2, 
+              shape = 19, color=panelCWMss$cols)
+cwm + facet_wrap(~Type, scales="free", drop=TRUE) +theme_bw() + 
+  theme(axis.text.x=element_text(angle=0, hjust=0.5))+xlab("")+ylab("")
+
+# Test without W1
+panelTest <- panelCWM[!(panelCWM$GARDEN == "WG1" & panelCWM$Treat == "I"),]
+panelTest$Treat <- relevel(panelTest$Treat, ref = "C")
+
+herb <- lmer(Value~Treat + (1|GARDEN), data=panelTest[panelTest$Type == "Herbivory",])
+ldmc <- lmer(Value~Treat + (1|GARDEN), data=panelTest[panelTest$Type == "LDMC",])
+sla  <- lmer(Value~Treat + (1|GARDEN), data=panelTest[panelTest$Type == "SLA",])
+
+herbt <- lmer(Value~Treat + (1|GARDEN), 
+              data=panelTest[panelTest$Type == "Herbivory (Woody plants)",])
+ldmct <- lmer(Value~Treat + (1|GARDEN), 
+              data=panelTest[panelTest$Type == "LDMC (Woody plants)",])
+slat  <- lmer(Value~Treat + (1|GARDEN), 
+              data=panelTest[panelTest$Type == "SLA (Woody plants)",])
+
+kable(summary(herb)$coef, caption="CWM herb, no WG1")   # Nothing
+kable(summary(ldmc)$coef,caption="CWM ldmc, no WG1")   # Significantlyhigher for I
+kable(summary(sla)$coef,caption="CWM sla, no WG1")    # Marginally lower for I
+kable(summary(herbt)$coef, caption="CWM herb, no WG1 trees")  # significantly higher for P and H2
+kable(summary(ldmct)$coef, caption="CWM ldmc, no WG1 trees")  # significantly higher I
+kable(summary(slat)$coef, caption="CWM sla, no WG1 trees")   # No effect
+```
+
+Fig. 3. Community weighted mesans for three traits based on the whole community from Wanang
+
+## Functional diversity plot.
+
+```{r,fig.height = 4, fig.width=7}
+fdDataW$GARDEN <- substr(fdDataW$plotCode,1,3)
+fdDataW$cols <- "grey40"
+
+# fdDataW$treatment <- as.character(fdDataW$treatment)
+# fdDataW$fdVals.ind <- as.character(fdDataW$fdVals.ind)
+# fdDataW$GARDEN <- as.character(fdDataW$GARDEN)
+
+sig <- "red"
+msig <- "orange"
+
+# Colour for the plot
+# "FRic" "FEve" "FDiv" "FDis" "RaoQ"
+# kable(summary(frich_testR)$coef) # mar: F,I,P sig: W125
+fdDataW[(fdDataW$fdVals.ind == "FRic" & fdDataW$treatment == "F"), ]$cols<-msig
+fdDataW[(fdDataW$fdVals.ind == "FRic" & fdDataW$treatment == "I"), ]$cols<-msig
+fdDataW[(fdDataW$fdVals.ind == "FRic" & fdDataW$treatment == "P"), ]$cols<-msig
+fdDataW[(fdDataW$fdVals.ind == "FRic" & fdDataW$treatment == "H2"), ]$cols<-sig
+# kable(summary(raoq_testR)$coef)  # mar: none  sig: F
+fdDataW[(fdDataW$fdVals.ind == "RaoQ" & fdDataW$treatment == "F"), ]$cols<-sig
+# kable(summary(fdis_testR)$coef)  # mar: I     sig: F
+fdDataW[(fdDataW$fdVals.ind == "FDis" & fdDataW$treatment == "I"), ]$cols<-msig
+fdDataW[(fdDataW$fdVals.ind == "FDis" & fdDataW$treatment == "F"), ]$cols<-sig
+# kable(summary(fdiv_testR)$coef)  # mar: I     sig: none
+fdDataW[(fdDataW$fdVals.ind == "FDiv" & fdDataW$treatment == "I"), ]$cols<-msig
+# kable(summary(feve_testR)$coef)  # mar: none  sig: none
+# wg1 insecticide grey80
+fdDataW[(fdDataW$GARDEN == "WG1" & fdDataW$treatment == "I"), ]$cols <- "grey80"
+
+fdPlot <- ggplot(fdDataW, aes(x=treatment, y=fdVals.values, group=GARDEN))+
+  geom_line(aes(linetype=GARDEN), size=0.5,alpha=0.15)+
+  geom_jitter(width = 0.1,size = 2.5,color=fdDataW$cols)
+
+fdPlot + facet_wrap(~ fdVals.ind, scales="free", drop=TRUE) +theme_bw() + theme(axis.text.x=element_text(angle=0, hjust=0.5))
+
+
+# Tests
+# Need to validate and do all the global tests
+frich_test <- lmer(FRic ~ Treat+(1|Block), data=fdDataTest)
+raoq_test <- lmer(RaoQ ~ Treat+(1|Block), data=fdDataTest)
+fdis_test <- lmer(FDis ~ Treat+(1|Block), data=fdDataTest)
+fdiv_test <- lmer(FDiv ~ Treat+(1|Block), data=fdDataTest)
+feve_test <- lmer(FEve ~ Treat+(1|Block), data=fdDataTest)
+
+# kable(summary(frich_test)$coef) # mar: F, P. sig: I, W125
+# kable(summary(raoq_test)$coef)  # mar: none  sig: F
+# kable(summary(fdis_test)$coef)  # mar: I     sig: F
+# kable(summary(fdiv_test)$coef)  # mar: I     sig: none
+# kable(summary(feve_test)$coef)  # mar: none  sig: none
+
+# Remove the WG1 INSECTICIDE PLOT
+fdDataTestRed <- fdDataTest[!(fdDataTest$Block == "WG1" & fdDataTest$Treat == "INSECTICIDE"),]
+
+frich_testR <- lmer(FRic ~ Treat+(1|Block), data=fdDataTestRed)
+raoq_testR <- lmer(RaoQ ~ Treat+(1|Block), data=fdDataTestRed)
+fdis_testR <- lmer(FDis ~ Treat+(1|Block), data=fdDataTestRed)
+fdiv_testR <- lmer(FDiv ~ Treat+(1|Block), data=fdDataTestRed)
+feve_testR <- lmer(FEve ~ Treat+(1|Block), data=fdDataTestRed)
+
+kable(summary(frich_testR)$coef,
+      caption="Functional richness, no WG1 I ") # mar: F,I,P sig: W125
+kable(summary(raoq_testR)$coef,
+      caption="Rao richness, no WG1 I ")  # mar: none  sig: F
+kable(summary(fdis_testR)$coef,
+      caption="Functional dispersion, no WG1 I ")  # mar: I     sig: F
+kable(summary(fdiv_testR)$coef,
+      caption="Functional divegence, no WG1 I ")  # mar: I     sig: none
+kable(summary(feve_testR)$coef,
+      caption="Functional evenness, no WG1 I ")  # mar: none  sig: none
+
+```
+Fig. 4. Functional diverstiy for all speceis and the tree communnity present in the community based on SLA, LDMC, Herbivory.
+
+## FD characteristics based only on wood trees
+
+```{r, fig.height = 4, fig.width=7}
+fdDataTW$GARDEN <- substr(fdDataTW$plotCode,1,3)
+fdDataTW$cols <- "grey40"
+
+sig <- "red"
+msig <- "orange"
+
+# "FRic" "FEve" "FDiv" "FDis" "RaoQ"
+# kable(summary(frich_testTR)$coef) # mar: F,P   sig: I
+fdDataTW[(fdDataTW$fdVals.ind == "FRic" & fdDataTW$treatment == "F"),]$cols <- msig
+fdDataTW[(fdDataTW$fdVals.ind == "FRic" & fdDataTW$treatment == "P"),]$cols <- msig
+fdDataTW[(fdDataTW$fdVals.ind == "FRic" & fdDataTW$treatment == "I"),]$cols <- sig
+# kable(summary(raoq_testTR)$coef)  # mar: none  sig: I
+fdDataTW[(fdDataTW$fdVals.ind == "RaoQ" & fdDataTW$treatment == "I"),]$cols <- sig
+# kable(summary(fdis_testTR)$coef)  # mar: none  sig: I
+fdDataTW[(fdDataTW$fdVals.ind == "FDis" & fdDataTW$treatment == "I"),]$cols <- sig
+# kable(summary(fdiv_testTR)$coef)  # mar: none  sig: none
+# kable(summary(feve_testTR)$coef)  # mar: none  sig: none
+
+# Colours for the plot NO Insecticide WG1
+fdDataTW[(fdDataTW$GARDEN == "WG1" & fdDataTW$treatment == "I"),]$cols <- "grey80"
+
+fdPlot2 <- ggplot(fdDataTW, aes(x=treatment, y=fdVals.values, group=GARDEN))+
+  geom_line(aes(linetype=GARDEN), size=0.5,alpha=0.15)+
+  geom_jitter(width = 0.1,size = 2.5,color=fdDataTW$cols)
+
+fdPlot2 + facet_wrap(~ fdVals.ind, scales="free", drop=TRUE) +theme_bw() + theme(axis.text.x=element_text(angle=0, hjust=0.5))
+
+frich_testT <- lmer(FRic ~ Treat+(1|Block), data=fdDataTwTest)
+raoq_testT <- lmer(RaoQ ~ Treat+(1|Block), data=fdDataTwTest)
+fdis_testT <- lmer(FDis ~ Treat+(1|Block), data=fdDataTwTest)
+fdiv_testT <- lmer(FDiv ~ Treat+(1|Block), data=fdDataTwTest)
+feve_testT <- lmer(FEve ~ Treat+(1|Block), data=fdDataTwTest)
+
+kable(summary(frich_testT)$coef) # mar: W125. sig: F, I, P
+kable(summary(raoq_testT)$coef)  # mar: none  sig: none
+kable(summary(fdis_testT)$coef)  # mar: I     sig: none
+kable(summary(fdiv_testT)$coef)  # mar: none  sig: none
+kable(summary(feve_testT)$coef)  # mar: none  sig: none
+
+# Reduced dataset
+fdDataTwTestRed <- fdDataTwTest[!(fdDataTwTest$Block == "WG1" & fdDataTwTest$Treat == "INSECTICIDE"),]
+
+frich_testTR <- lmer(FRic ~ Treat+(1|Block), data=fdDataTwTestRed)
+raoq_testTR <- lmer(RaoQ ~ Treat+(1|Block), data=fdDataTwTestRed)
+fdis_testTR <- lmer(FDis ~ Treat+(1|Block), data=fdDataTwTestRed)
+fdiv_testTR <- lmer(FDiv ~ Treat+(1|Block), data=fdDataTwTestRed)
+feve_testTR <- lmer(FEve ~ Treat+(1|Block), data=fdDataTwTestRed)
+
+kable(summary(frich_testTR)$coef) # mar: F,P   sig: I
+kable(summary(raoq_testTR)$coef)  # mar: none  sig: I
+kable(summary(fdis_testTR)$coef)  # mar: none  sig: I
+kable(summary(fdiv_testTR)$coef)  # mar: none  sig: none
+kable(summary(feve_testTR)$coef)  # mar: none  sig: none
+
+```
+
+## Randomizations
+
+```{r, fig.height = 4, fig.width=6}
+dataRC_facets_plot$sig <- rep(c("NS","*","*","NS","NS"), each=2)
+
+pl <- ggplot() +
+    geom_errorbar(data=dataRC_facets_plot,
+                  mapping=aes(x=treat, ymin=lose, ymax=upse), width=0.2,
+                  size=1, color="gray60") + ylab("Within treatment dissimilarity (RC)") +
+  xlab("")+
+    geom_hline(yintercept = c(0), lty=4, lwd = 0.8, col="grey60") +
+    geom_point(data=dataRC_facets_plot, mapping=aes(x=treat, y=meanRC), size=1, shape=21,
+               fill="black")+
+    ylim(-1,1) + geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
+    facet_wrap(~type, scales="free", drop=TRUE) + theme_bw() +
+    theme(axis.text.x=element_text(angle=0, hjust=0.5),
+          strip.text = element_text(size=8))
+pl + annotate("text", label = c("","*","*","",""), size = 10, x = 1.5, y = 0.75)
+```

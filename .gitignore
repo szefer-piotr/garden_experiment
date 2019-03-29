@@ -7,3 +7,4 @@ git tutorial.txt
 # ignore .rds model objects
 *.rds
 *.pdf
+/repo/*.docx

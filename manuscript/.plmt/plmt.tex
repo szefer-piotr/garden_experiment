@@ -1,0 +1,84 @@
+\usepackage[table,dvipsnames]{xcolor}
+\usepackage{ccicons}
+
+\usepackage{listings}
+\lstset{
+  numbers=left,
+  tabsize=1,
+  basicstyle=\small\ttfamily,
+  breaklines=true
+}
+\newcommand{\passthrough}[1]{#1}
+
+% Page number, etc
+\definecolor{meta}{rgb}{0.4,0.4,0.4}
+
+% Palette
+\definecolor{s1}{RGB}{130,64,113}
+\definecolor{s2}{RGB}{44,109,156}
+\definecolor{s3}{RGB}{84,130,43}
+\definecolor{s4}{RGB}{231,117,46}
+\definecolor{s5}{RGB}{180,66,68}
+
+% Critic
+\colorlet{del}{s5}
+\colorlet{add}{s3}
+\colorlet{hlh}{s4}
+\colorlet{not}{s1}
+
+% Accent color
+\colorlet{accent}{s2}
+
+% Title background
+\definecolor{bg}{RGB}{218, 228, 236}
+
+
+\usepackage[hidelinks,unicode=true]{hyperref}
+\usepackage{etoolbox}
+
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
+\usepackage{adjustbox}
+
+
+% Fonts
+\input{.plmt/plmt-fonts.tex}
+
+\usepackage[nooneline]{caption}
+\captionsetup{
+  font={small},
+  labelfont={bf},
+  format=plain,
+  labelsep=quad}
+
+% Spacing
+\usepackage{setspace}
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{0em}
+
+\input{.plmt/plmt-marks.tex}
+
+\usepackage{booktabs, tabularx, longtable}
+\usepackage{csquotes}
+
+% Geometry block
+\usepackage[includemp,
+            letterpaper,
+            top=1.2in,
+            bottom=2.510cm,
+            inner=0.9in,
+            outer=0.5in,
+            marginparwidth=2in,
+            marginparsep=0.5in]{geometry}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+\renewcommand\UrlFont{\color{s3}\rmfamily\bfseries}

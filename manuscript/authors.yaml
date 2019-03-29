@@ -1,0 +1,16 @@
+---
+- family: Piotr
+  given: Szefer
+  affiliations:
+    - Faculty of Science, University of South Bohemia, Branišovská 31, 370-05 České Budějovice, Czech Republic
+    - Institute of Entomology, Biology Centre, Czech Academy of Sciences, České Budějovice, Czech Republic
+  email: szefer85@gmail.com
+  id: ps
+  orcid: 0000-0002-7332-2516
+- family: Author
+  given: Second
+  affiliations:
+    - University of Whatever
+    - Québec Centre for Biodiversity Sciences
+  id: sa
+...
