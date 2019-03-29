@@ -10,27 +10,43 @@ library(brms)
 
 # Perform the tests only one example for log(Bio)
 
-## Whole community
-l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
-           data=AllTestData, 
-           control = list(adapt_delta = 0.8))
+## Set some priors 
+priors <- c(set_prior("normal(0, 200)", class = "Intercept"),
+            set_prior("normal(0, 50)", class = "b"),
+            set_prior("normal(0, 100)", class = "sd"),
+            set_prior("normal(0, 100)", class = "sigma"),
+            set_prior("lkj(2)", class = "cor"))
 
-## Whole community with random intercept and slope
-l1W_ranef <- brm(log(BIO)~TREAT + (1+TREAT|GARDEN), 
-           data=AllTestData, 
-           control = list(adapt_delta = 0.99),
+## Whole community random intercept
+l1W <- brm(log(BIO)~TREAT + (1|GARDEN), 
+           data=AllTestData,
+           #prior = priors,
+           control = list(adapt_delta = 0.999),
+           file="bioAll")
+
+## Whole community random intercept and slope
+l1W_ranef <- brm(log(BIO) ~ TREAT + (1+TREAT|GARDEN), 
+           data=AllTestData,
+           #prior = priors,
+           control = list(adapt_delta = 0.999),
            file="bioAllrenef")
+
+l1W_ranslope <- brm(log(BIO) ~ TREAT + (0+TREAT|GARDEN), 
+                 data=AllTestData,
+                 #prior = priors,
+                 control = list(adapt_delta = 0.999),
+                 file="bioAllrenslope")
 
 # Summaries
 summary(l1W)
 summary(l1W_ranef)
 
 # See if the model with random intercepts is more informative than simple mixed model
-compare_ic(waic(l1W), waic(l1W_ranef), ic = "waic") # it looks like it is!
+compare_ic(waic(l1W_ranef), waic(l1W_ranslope), ic = "waic") # it looks like it is!
 
 # Plots
-stanplot(l1W)                    # random intercept
-stanplot(l1W_ranef, pars="^b_")  # random intercept and slope
+stanplot(l1W, type="hist")                    # random intercept
+stanplot(l1W_ranef, pars="^b_", type = "hist")  # random intercept and slope
 marginal_effects(l1W)      
 marginal_effects(l1W_ranef)      # second model seems to better represent the data
 
@@ -56,8 +72,8 @@ newdata = expand.grid(TREAT= levels(AllTestData$TREAT),
 
 fit = fitted(
   l1W_ranef,
-  newdata=newdata,
-  re_formula = NULL, # ignore random effects
+  newdata=newdata1,
+  re_formula = NA, # ignore random effects
   summary = TRUE   # mean and 95% ci
 )
 
@@ -90,6 +106,19 @@ ggplot(df_collapsed, aes(x = TREAT, y = fit)) +
   ylab('log(BIO)') +
   theme_bw () +
   theme(panel.grid = element_blank())
+
+#
+# ggplot(df_plot, aes(x = TREAT, y = fit)) +
+#   #geom_violin(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.5, color="gray70", fill='gray95') +
+#   geom_jitter(data=AllTestData, aes(x=TREAT, y=log(BIO)), alpha=0.3, size=4,
+#               position = position_jitter(width = 0.07)) +
+#   geom_errorbar(aes(ymin=lwr, ymax=upr), position=position_dodge(), size=1, width=.5) +
+#   geom_point(shape=21, size=4, fill='red') +
+#   xlab("") +
+#   ylab('log(BIO)') +
+#   theme_bw () +
+#   theme(panel.grid = element_blank())
+
 
 ###############################
 # Facet plots for each garden #
