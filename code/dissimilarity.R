@@ -6,6 +6,7 @@ library(vegan)
 library(betareg)
 library(stats4)
 library(ggplot2)
+library(dplyr)
 
 contingencyTable2 <- function(dataset, ROW, COL, VALUE){
   # Get rid of the empty factors
@@ -147,7 +148,7 @@ bcr <- betareg(bcvals~cross, data=interdf)
 summary(bcr)
 
 
-# library(multcompView)
+library(multcompView)
 library(emmeans)
 
 marginal = lsmeans(bcr,~ cross)
@@ -157,6 +158,10 @@ marginal = lsmeans(bintra1,~ treat)
 CLD = cld(marginal,alpha=0.1,Letters=letters,adjust="tukey")
 
 # Balsega beta
+#install.packages("devtools")
+# library("devtools")
+# devtools::install_github("cran/betapart")
+
 library(betapart)
 require(vegan)
 
@@ -195,9 +200,13 @@ beta_part$treat <- factor(beta_part$treat, levels = c("CONTROL",
                                                       "WEEVIL125"))
 
 # Stacked
-# png("figs/beta_part.png", width=400, height=400)
+png("figs/beta_part.png", width=4, height=4, units="in", res=800)
 ggplot(beta_part, aes(fill=type, y=val, x=treat)) + 
   geom_bar( stat="identity") + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-# dev.off()
+  theme(axis.text.x = element_text(angle = 0, hjust = 1),
+        axis.title.x = element_blank()) +
+  ylab("Dissimilarity") + 
+  scale_fill_manual(values =c("forestgreen","gold"), name="Type") +
+  scale_x_discrete(labels=c("C", "F","I","P","H1","H2"))
+dev.off()

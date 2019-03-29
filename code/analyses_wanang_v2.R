@@ -6,10 +6,18 @@ library(lmerTest)
 library(Hmisc) #for the stat_summary plots
 library(brms)
 library(car)
-library(brms)
 library(vegan)
 library(MASS)
 library(betareg)
+
+# install.packages("lmerTest")#,"Hmisc"))
+# install.packages("Hmisc") #for the stat_summary plots
+# # install.packages("brms") #change that file
+# install.packages("car")
+# install.packages("vegan")
+# install.packages("MASS")
+# install.packages("betareg")
+# install.packages("ggplot2")
 
 contingencyTable2 <- function(dataset, ROW, COL, VALUE){
   # Get rid of the empty factors
@@ -161,7 +169,8 @@ colors = color=c("black","grey50","grey50","grey50","grey50","red",
                  "black","grey50","red","grey50","grey50","grey50",
                  "black","red","grey50","grey50","grey50","red")
 
-#png("figs/fig1.png",width=1200, height = 400)
+# png("figs/fig1.png",height = 5, width = 12, units = 'in',res=1200)
+# png("figs/fig1.png",width=1200, height = 400, res=700)
 fig1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
                  geom="errorbar", color= colors, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
@@ -170,7 +179,7 @@ fig1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1),
       strip.text = element_text(size=20),
       legend.justification=c(0.5,0.5), 
       legend.position="bottom")+xlab("")+ylab("")
-#dev.off()
+# dev.off()
 
 # >>> FIG. 2 ----
 
@@ -668,7 +677,7 @@ stacked_cvst$ind <- factor(stacked_cvst$ind,
                            labels = c("C", "F", "H2","P","H1","I"))
 
 # Coloured gardens
-png("figs/fig3b.png",width=1200, height = 1200)
+# png("figs/fig3b.png",width=1200, height = 1200)
 
 p1 <- ggplot(stacked_cvst[stacked_cvst$values > 0,], 
              aes(x = ind, y= values, colour = block)) +
@@ -698,7 +707,7 @@ length(colours)
 p1 + stat_summary(fun.data=cibeta, color = colours,
                   geom="pointrange",cex=1.5,lwd=4,
                   position = position_dodge(width = 0.90))
-dev.off()
+# dev.off()
 
 #png("figs/fig3.png",width=1200, height = 1200)
 # p1 <- ggplot(stacked_cvst, aes(x = ind, y= values, group=block)) +
@@ -907,76 +916,82 @@ scl = 2
 x11(10,10)
 
 
-png("figs/figXordination.png", width=800, height=800)
+
+
+
+
+png("figs/figXordination.png", width=7, height=7, units = "in", res = 800)
 # Selected species vectors
 selection <- rownames(summary(m)$species) %in% selected_s
-
-# Species coodrinates vector
-# opl <- ordipointlabel(m, display ="species", select = selection, scaling = scl)
-# names(opl)
-# coord <- opl$points
 
 # Main plot - sites
 plot(m, type = "n", scaling = scl, xlab = "RDA1 [19.55%]",
      ylab = "RDA2 [4.37%]", cex.lab = 1.5)
 alpha = 200
-colvec <- c(rgb(230,159,0,alpha, max=255), 
-            rgb(86,180,233,alpha, max=255), 
-            rgb(0,158,115,alpha, max=255), 
-            rgb(0,114,178,alpha, max=255), 
-            rgb(213,94,0,alpha, max=255), 
+colvec <- c(rgb(230,159,0,alpha, max=255),
+            rgb(86,180,233,alpha, max=255),
+            rgb(0,158,115,alpha, max=255),
+            rgb(0,114,178,alpha, max=255),
+            rgb(213,94,0,alpha, max=255),
             rgb(240,228,66,alpha, max=255))
 # # Species
-# arrows(rep(0,dim(coord)[1]),  rep(0,dim(coord)[1]), coord[,1], coord[,2], 
+# arrows(rep(0,dim(coord)[1]),  rep(0,dim(coord)[1]), coord[,1], coord[,2],
 #        code = 2, length = 0.05)
 
-orditorp(m, display = "species", select = selection, col = "grey50",
-         lwd=4, cex =2, pch = 19, scaling = scl)
-# points(m, display = "species", select = selection, 
-#        col = "grey50", cex =1, pch = 19, scaling = -1)
+# melanolepis multiglandulosa coordinates
+shift <- 0.15
+cl <- "grey60"
+pc <- 17
 
 # Points
 with(test, points(m, display = "sites", col = colvec[TREAT],
                       scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
-# Vectors
-text(m, display="bp", select = "insecticide", col="darkcyan", lwd=2, 
-     cex = 1.7, scaling = scl)
-#text(m$CCA$biplot["insecticide", c(1,2)], '*', cex = 2, col="darkcyan")
+
+# Centroid for the insecticide treatment
+points(0.76787487,0.079661336, pch = 4, cex = 1.5, lwd = 2.5, 
+       col = "darkcyan")
+# text
+text(0.76787487+shift,0.079661336+shift, "Insecticide (I)", col = "darkcyan",
+     cex = 1.5)
 
 # Legend
-with(test, legend("topright", legend = levels(TREAT), bty = "n",
-                      col = colvec, pch = 21, pt.bg = colvec))
-dev.off()
-
-# Main plot - species
-#x11(800, 800)
-png("figs/fig3ordsp.png", 800,800)
-plot(m, type = "n", display= "species", scaling = scl, xlab = "RDA1 [19.55%]",
-     ylab = "RDA2 [4.37%]")
-alpha = 200
-colvec <- c(rgb(230,159,0,alpha, max=255), 
-            rgb(86,180,233,alpha, max=255), 
-            rgb(0,158,115,alpha, max=255), 
-            rgb(0,114,178,alpha, max=255), 
-            rgb(213,94,0,alpha, max=255), 
-            rgb(240,228,66,alpha, max=255))
-# # Species
-# arrows(rep(0,dim(coord)[1]),  rep(0,dim(coord)[1]), coord[,1], coord[,2], 
-#        code = 2, length = 0.05)
-
-# orditorp(m, display = "species", select = selection, col = "grey50",
-#          lwd=4, cex =1, pch = 19, scaling = scl)
-# points(m, display = "species", select = selection, 
-#        col = "grey50", cex =1, pch = 19, scaling = -1)
-# Vectors
-text(m, display="species", col="darkcyan", lwd=2, scaling = scl)
-# Points
-with(test, points(m, display = "species", col = colvec[TREAT],
-                  scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
-# Legend
-with(test, legend("topright", legend = levels(TREAT), bty = "n",
+with(test, legend("topright",
+                  legend = c("C","F","I","P","H2","H1"), bty = "n",
                   col = colvec, pch = 21, pt.bg = colvec))
 dev.off()
+
+
+
+
+# Main plot - species
+# #x11(800, 800)
+# png("figs/fig3ordsp.png", 800,800)
+# plot(m, type = "n", display= "species", scaling = scl, xlab = "RDA1 [19.55%]",
+#      ylab = "RDA2 [4.37%]")
+# alpha = 200
+# colvec <- c(rgb(230,159,0,alpha, max=255), 
+#             rgb(86,180,233,alpha, max=255), 
+#             rgb(0,158,115,alpha, max=255), 
+#             rgb(0,114,178,alpha, max=255), 
+#             rgb(213,94,0,alpha, max=255), 
+#             rgb(240,228,66,alpha, max=255))
+# # # Species
+# # arrows(rep(0,dim(coord)[1]),  rep(0,dim(coord)[1]), coord[,1], coord[,2], 
+# #        code = 2, length = 0.05)
+# 
+# # orditorp(m, display = "species", select = selection, col = "grey50",
+# #          lwd=4, cex =1, pch = 19, scaling = scl)
+# # points(m, display = "species", select = selection, 
+# #        col = "grey50", cex =1, pch = 19, scaling = -1)
+# # Vectors
+# text(m, display="species", col="darkcyan", lwd=2, scaling = scl)
+# # Points
+# with(test, points(m, display = "species", col = colvec[TREAT],
+#                   scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
+# # Legend
+# with(test, legend("topright", legend = levels(TREAT), bty = "n",
+#                   col = colvec, pch = 21, pt.bg = colvec))
+# dev.off()
 
 # variance explained ----
 barplot(m$CA$eig/m$tot.chi, names.arg = 1:m$CA$rank, cex.names = 0.5, 

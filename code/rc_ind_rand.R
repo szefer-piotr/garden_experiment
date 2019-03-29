@@ -468,8 +468,8 @@ plotMeMyGraphs <- function(path){
 # Read the data from the file ------
 
 path <- c("datasets/trees_assembly")
-plot1 <- plotMeMyGraphs(path1)
-png("figs/FigS4.png", width = 600, height=400)
+plot1 <- plotMeMyGraphs(path)
+png("figs/FigS4.png", width = 6, height=4, units="in", res = 800)
 plot1$plot
 dev.off()
 
