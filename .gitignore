@@ -8,3 +8,6 @@ git tutorial.txt
 *.rds
 *.pdf
 /repo/*.docx
+/repo
+/submission
+/previous_manuscripts
