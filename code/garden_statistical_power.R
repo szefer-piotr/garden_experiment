@@ -196,32 +196,66 @@ mu = 4.40862
 percs <- seq(0.1, 1, by=0.05)
 sdvs <- seq(0.1, 1, by = 0.05)
 
-resmatgard <- matrix(0, nrow = length(percs),
+# Random effect standard deviation
+resmatgard1 <- matrix(0, nrow = length(percs),
                      ncol = length(sdvs))
-
-colnames(resmatgard) <- sdvs
-rownames(resmatgard) <- percs
-
-# for(perc in percs){
-#   for(sdv in sdvs){
-#     sim <- pA(rands = 49, ins = mu*perc, sdg=sdv, sd=1)
-#     resmatgard[as.character(perc),as.character(sdv)] <- sim
-#   }
-#   
-# }
+colnames(resmatgard1) <- sdvs
+rownames(resmatgard1) <- percs
+for(perc in percs){
+  for(sdv in sdvs){
+    sim <- pA(rands = 3, ins = mu*perc, sdg=sdv, sd=0.7, ngard=6)
+    resmatgard1[as.character(perc),as.character(sdv)] <- sim
+  }
+}
+levelplot(resmatgard1, xlab = "Effect size % comparing with the mean",
+          ylab = "Standard deviation of the random effect") +
+  as.layer(contourplot(resmatgard1, col = "red"))
+# Statistical power, why is the random effect not important?
 
 
 # Residual standard deviation
+resmatgard2 <- matrix(0, nrow = length(percs),
+                     ncol = length(sdvs))
+colnames(resmatgard2) <- sdvs
+rownames(resmatgard2) <- percs
 for(perc in percs){
   for(sdv in sdvs){
-    sim <- pA(rands = 3, ins = mu*perc, sdg=1, sd=sdv)
-    resmatgard[as.character(perc),as.character(sdv)] <- sim
+    sim <- pA(rands = 3, ins = mu*perc, sdg=0.25, sd=sdv, ngard=6)
+    resmatgard2[as.character(perc),as.character(sdv)] <- sim
   }
   
 }
-
-resmatgard
-
-levelplot(resmatgard, xlab = "Effect size % comparing with the mean",
+levelplot(resmatgard2, xlab = "Effect size % comparing with the mean",
           ylab = "Standard deviation of the random effect") +
-  as.layer(contourplot(resmatgard, col = "red"))
+  as.layer(contourplot(resmatgard2, col = "red"))
+
+
+# Residual and random effect
+resmatgard3 <- matrix(0, nrow = length(sdvs),
+                     ncol = length(sdvs))
+colnames(resmatgard3) <- sdvs
+rownames(resmatgard3) <- sdvs
+for(sdvr in sdvs){
+  for(sdvc in sdvs){
+    sim <- pA(rands = 3, ins = 0.35*mu, sdg=sdvr, sd=sdvc, ngard=6)
+    resmatgard3[as.character(sdvr),as.character(sdvc)] <- sim
+  }
+}
+levelplot(resmatgard3, xlab = "Effect size % comparing with the mean",
+          ylab = "Standard deviation of the random effect") +
+  as.layer(contourplot(resmatgard3, col = "red"))
+
+## Using simr package ----
+
+# run analyses_wanang_v2.R first
+install.packages("simr")
+library(simr)
+x <- c("TREATWEEVIL125")
+
+fixef(bio_rbl)[x] <- -0.05
+powerSim(bio_rbl)
+
+model2 <- extend(bio_rbl, along = "GARDEN", n=20)
+powerSim(model2)
+pc <- powerCurve(model2)
+plot(pc)
