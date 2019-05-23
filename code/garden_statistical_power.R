@@ -248,7 +248,20 @@ levelplot(resmatgard3, xlab = "Effect size % comparing with the mean",
 ## Using simr package ----
 
 # run analyses_wanang_v2.R first
-install.packages("simr")
+pp <- profile(bio_rbl)
+confint(pp)
+# or
+
+# You might try MCMCglmm:
+#   library(MCMCglmm)
+# mm <- MCMCglmm(Reaction ~ Days,
+#                random = ~us(Days):Subject, data=sleepstudy)
+# summary(mm)
+# 
+# the 'G-structure' part of the output gives you lower and upper
+# bounds on the 95% credible interval.
+
+
 library(simr)
 x <- c("TREATWEEVIL125")
 
