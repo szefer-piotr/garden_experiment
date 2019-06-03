@@ -86,7 +86,7 @@
 # 
 # ds$bio <- as.numeric(as.character(ds$bio))
 
-# SIMULATIONS -----
+## SIMULATIONS -----
 
 library(lme4)
 library(lmerTest)
@@ -140,15 +140,18 @@ generateData <- function(ngard = 6,    # number of blocks/gardens
   
 }
 
+ds <- generateData(sdg=0.7, sd=0.7)
+# ds <- generateData(sdg=0.7, sd=0.7, fung=0,ins=0.5,h1=0,h2=0,pred=0)
 
-ds <- generateData(sdg=1, sd=0.5)
-
-plt <- ggplot(ds, aes(x = treat, y =bio))
+plt <- ggplot(ds, aes(x = treat, y = exp(bio)))
 plt + geom_boxplot() + 
   geom_jitter(aes(color=gard), width = 0.1, size=3)
 
+
 fitted_model <- lmer(bio~treat+(1|gard), data = ds)
 summary(fitted_model)
+
+sqrt(unlist(VarCorr(fitted_model)))
 sqrt(unlist(VarCorr(fitted_model)))
 
 # Decrease the variability between plots and see how the power changes.
@@ -171,16 +174,17 @@ pA <- function(rands = 5,...){
 #   sim <- pA(rands = 9, sdg = sdg)
 #   pvals <- c(pvals, sim)
 # }
-# 
+
 # plot(sdgs, pvals)
 # 
-# effs <- seq(0.1, -1.5, by=-0.1)
-# pvals <- c()
-# for(eff in effs){
-#   sim <- pA(rands = 9, ins = eff)
-#   pvals <- c(pvals, sim)
-# }
-
+effs <- seq(0, -0.5, by=-0.05)
+pvals <- c()
+for(eff in effs){
+  sim <- pA(rands = 33, ins = eff, sd=1)
+  pvals <- c(pvals, sim)
+}
+plot(pvals~effs, type = "l")
+abline(h=0.8)
 
 resmatgard <- as.matrix(read.table("resmatgard.txt"))
 
@@ -245,30 +249,117 @@ levelplot(resmatgard3, xlab = "Effect size % comparing with the mean",
           ylab = "Standard deviation of the random effect") +
   as.layer(contourplot(resmatgard3, col = "red"))
 
-## Using simr package ----
+## SIMULATIONS Using simr package ----
 
-# run analyses_wanang_v2.R first
-pp <- profile(bio_rbl)
-confint(pp)
-# or
+library(simr)
 
-# You might try MCMCglmm:
-#   library(MCMCglmm)
-# mm <- MCMCglmm(Reaction ~ Days,
-#                random = ~us(Days):Subject, data=sleepstudy)
-# summary(mm)
-# 
-# the 'G-structure' part of the output gives you lower and upper
-# bounds on the 95% credible interval.
+# Estimates from the paper Sierra et al. 2007
+gs <- 0.04 # garden area
+mu = 46    # Mt average hectar of secondary forest
+muss = 46 * 0.04 # biomass predicted on our plots
+
+sfbio <- 46.4 # total biomass/ha
+sdbio <- 4.3
+sd = 4.3
+sim = rnorm(1000, mu, sd)
+hist(log(sim))
+mean(log(sim))
+
+sd(log(sim))
+var(log(sim))
+
+# Based on age Mg/ha for early successonal 1 year plots
+age=seq(0,50, by=0.5)
+TAGB = 247*(1 - exp(-0.068*age))^2.886
+plot(TAGB~age, type = "l")
+
+# For one year old forerst:
+mubio <- 0.09570716 * 1000 # in kg
+sdbio <- 4.3
+rbio <- rnorm(10000, mubio, sdbio)
+hist(log(rbio))
+var(log(rbio))
+
+# Number of species per hectar
+rp <- rnorm(1000, 166, 1.6)
+rp <- rpois(1000,166)
+
+hist(rp)
+var(rp)
+sd(rp)
+13.17666^2
 
 
 library(simr)
-x <- c("TREATWEEVIL125")
+x <- 1:6
+g <- letters[1:6]
+X <- expand.grid(x=x,g=g)
 
-fixef(bio_rbl)[x] <- -0.05
-powerSim(bio_rbl)
+onePower <- function(val = -0.1, mubio = mubio,...){
+  b <- c(mubio, val)
+  model1<-makeLmer(y ~ x + (1|g),
+                   fixef = b, 
+                   VarCorr = 0.5,
+                   sigma = 0.7,
+                   data=X)
+  pS <- powerSim(model1)
+  return(pS)
+}
 
-model2 <- extend(bio_rbl, along = "GARDEN", n=20)
-powerSim(model2)
-pc <- powerCurve(model2)
-plot(pc)
+sopdf <- data.frame()
+for(i in seq(0.05, 0.5, by=0.1)){
+  sop <- summary(onePower(i))
+  sopdf <- rbind(sopdf, data.frame(es = i,
+                                   lo = sop$lower,
+                                   up = sop$upper,
+                                   mn = sop$mean))
+}
+sopdf
+plot(sopdf$mn~sopdf$es, type = "l")
+abline(h=0.8)
+
+exp(0.21) # Difference in kg that we would be able to detect.
+
+par(new=T)
+plot(sopdf$lo~sopdf$es)
+
+# Similar for the number of species
+musp <- 35 # 0.1 * 166
+sdsp <- 5
+
+
+x <- 1:6
+g <- letters[1:6]
+X <- expand.grid(x=x,g=g)
+
+onePower <- function(val = 5, mubio = musp,...){
+  b <- c(mubio, val)
+  model1<-makeLmer(y ~ x + (1|g),
+                   fixef = b, 
+                   VarCorr = 25,
+                   sigma = 25,
+                   data=X)
+  pS <- powerSim(model1)
+  return(pS)
+}
+ssss <- onePower(val = 5, mean = musp, VarCorr=sdsp, sigma=sdsp)
+
+# NUmber of stems Poisson
+muabu <- 30
+sdabu <- 10
+
+# https://www.r-bloggers.com/power-analysis-and-sample-size-calculation-for-agriculture/
+
+### pamm package -----
+install.packages("pamm")
+library(pamm)
+ours <- EAMM(numsim=10,group=10,repl=4,fixed=c(0,1,1),VI=seq(0.1,0.3,0.05),VS=seq(0.05,0.2,0.05))
+
+plot(ours, "both")
+
+fm1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy)
+
+ours2 <- EAMM(numsim=10, mer.model=list(model=fm1,env="Days",
+                                        random="Subject"),VI=seq(0.3,0.5,0.1), 
+              VS=seq(0.05,0.2,0.05) )
+plot(ours2, "both")

@@ -1,0 +1,119 @@
+---
+title: "Garden Experiment Power Analysis"
+author: "Piotr Szefer"
+date: "June 3, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Introduction
+
+Here we prrovide steps for power analysis of our simple experimental design with six treatments nested within si xexperimental blocks. Our goal was to test the effect of biotic factors (birds bats and ants, pathogenic fungi and insect herbivores) on the general descriptors and functional diversity of early (one year) succcesiional communitties in tropical forst. Despite the complexity of ecological process of succession, there community descriptor should not be affected by local contet if the variation between blocks is low. Sources of variation in biomass, abundance and species richness were identified and processes behind emergin gcontingent effects explained by feeding modes of dominant herbivores, their predators and plant species involved (Schmitz 2010 -book). Therefore, we kept our experiments in a distance that would allow for their statistical independence (min 200m apart - why is that ok?) but at the same time close enough that allows for treating differences between blocks as a random effect. To analyse power of our design we adapted a Monte Carlo simulations, where we simulated hypothetical data based on our predictions of the *between block variation* $\sigma_{block}$ and *residual variance* $\sigma_{error}$. We explored then what would be the possible effect size that we could detect given these estimates and discuss its biological meaning. In order to estimate power of our experimental setup (randomized complete block design with 6 treatments and six control plots) we used available estimates of variation in biomass, species richness and abundance of plants in tropical forests. It was difficult to find appropriate literature describing one year  regenration, therefore, sometimes we refer to the variatioin in the mature tropical forest. We also explore, how our design would deal with higher than predicted variation between blocks and residual variation.
+
+## Estimates of variation
+
+It is difficult to find estimates of variation in biomass for early successional tropical forests. In one paper Sierra et al. (2007) estimated a function of secondary forest biomass. Using their estimates of the biomass as a function of the forest age:
+
+```{r setup, include=TRUE}
+age=seq(0,50, by=0.5)
+TAGB = 247*(1 - exp(-0.068*age))^2.886
+plot(TAGB~age, type = "l")
+```
+
+Unfortunately there are no estimates of variaiton for the functional responce, however totoal aboveground biomass for secondary forests was showed to be $46.4 \pm 4.3$ T/ha (standard deviation) which gives for our small plots an estimate of biomass around `r 46.4*0.0025*1000`kg/ha indicating rather low variabilitiy at least at the later stages of succession (what is the age of this forest and what type of foreswt is this why is it relervant, are there any closer estimates?). From the functional responce above we expected to have approximately `r 0.0957 * 1000` kilograms of above ground biomass. With probably higher variation. I estimated based on simple proportional relationship that sd for early successional gardens might be around (7 kg).
+
+```{r}
+vals <- rlnorm(50000, log(96), log(6.164414^2))
+hist(log(vals[vals < 100000]), breaks=1000)
+mean(log(vals[vals < 100000]))
+sqrt(var(log(vals[vals < 100000])))
+```
+With these estimates we can now create a hypothetical dataset. Create a dataset with six treatments within six experimental blocks:
+
+```{r}
+library(ggplot2)
+library(lmerTest)
+library(simr)
+
+genDat <- function(ngard = 6,    # number of blocks/gardens
+                    nplot = 6,    
+                    mu = 95,   # global average log[bio]
+                    fung = 0,  # effect size for fungicide
+                    ins = 0,  # effect size for insecticide
+                    h1 = 0,     # effect size herbivory low
+                    h2 = -5,     # effect size herbivory high
+                    pred = 0,  # effect size predator
+                    sdg = 7, # standrad dev for the random effect
+                    sd = 7){    # standard dev for the residuals 
+  gard = rep(LETTERS[1:ngard], each = nplot)         # garden label
+  gardeff = rep(rlnorm(ngard, 0, log(sdg)), each = nplot) # garden effect
+  ploteff = rlnorm(ngard*nplot, 0, log(sd))                # noise for plots
+  print(paste("Generating data with sd garden:",sdg," and error var", sd))
+  # Simulate the explanatory variables
+  treat <- c()
+  for (g in 1:ngard){treat <- c(treat,
+                                sample(c("c","f","i","h1","h2","p"), nplot))}
+  insecticide <- as.numeric(treat == "i")
+  fungicide   <- as.numeric(treat == "f")
+  herbivory1  <- as.numeric(treat == "h1")
+  herbivory2  <- as.numeric(treat == "h2")
+  predator    <- as.numeric(treat == "p")
+  bio <- mu + fung*fungicide + ins*insecticide + h1*herbivory1 + h2*herbivory2 + pred*predator + gardeff + ploteff
+  ds <- as.data.frame(cbind(bio,
+                            gard,
+                            treat))
+  
+  ds$bio <- as.numeric(as.character(ds$bio))
+  return(ds)
+}
+
+ds <- genDat(ins=-10)
+
+plt <- ggplot(ds, aes(x = treat, y = bio))
+plt + geom_boxplot() + 
+  geom_jitter(aes(color=gard), width = 0.1, size=3)
+
+# Randomization
+
+randDat <- function(rands=9, pattern=c(1, 0, 0, -15,0,0), sdg=2, sd=2){
+  # pattern <- c(int,fung,h1,h2,ins,pred)
+  fits <- c()
+  for (rand in 1:rands){
+    ds <- genDat(fung = pattern[2],
+                 h1 = pattern[3],
+                 h2 = pattern[4],
+                 ins=pattern[5],
+                 pred = pattern[6],
+                 sdg = sdg,
+                 sd = sd)
+    fitted_model <- lmer(log(bio)~treat+(1|gard), data = ds)
+    sfm <- summary(fitted_model)
+    print(sfm)
+    # print(pattern)
+    res <- sum((sfm$coefficients[, "Pr(>|t|)"] < 0.05) == (pattern != 0)) == 6
+    fits <- c(fits, res)
+  }
+  return(fits)
+}
+
+# pattern <- c(int,fung,h1,h2,ins,pred)
+rd <- randDat(rands=999, pattern=c(1, 0, 0, -10,0,0), 5, 5)
+sum(rd/999)
+
+```
+
+Lets say, that we would like to be able to detect an effect size of 5 kg decrease in total aboveground biomass:
+
+```{r}
+b <- c(96, 5)
+
+# model1<-makeGlmer(y ~ x + (1|g),
+#                  fixef = b, 
+#                  VarCorr = 0.5,
+#                  sigma = 0.7,
+#                  data=X, 
+#                  family="gaussian")
+# pS <- powerSim(model1)
+
+```
