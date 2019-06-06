@@ -3,6 +3,7 @@ title: "Garden Experiment Power Analysis"
 author: "Piotr Szefer"
 date: "June 3, 2019"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -15,30 +16,59 @@ Here we prrovide steps for power analysis of our simple experimental design with
 
 It is difficult to find estimates of variation in biomass for early successional tropical forests. In one paper Sierra et al. (2007) estimated a function of secondary forest biomass. Using their estimates of the biomass as a function of the forest age:
 
-```{r setup, include=TRUE}
+```{r setup, include=TRUE, echo=F}
 age=seq(0,50, by=0.5)
 TAGB = 247*(1 - exp(-0.068*age))^2.886
 plot(TAGB~age, type = "l")
 ```
 
-Unfortunately there are no estimates of variaiton for the functional responce, however totoal aboveground biomass for secondary forests was showed to be 46.4 $\pm$ 4.3 T/ha (standard deviation) which gives for our small plots an estimate of biomass around `r 46.4*0.0025*1000`kg/ha indicating rather low variabilitiy at least at the later stages of succession (what is the age of this forest and what type of foreswt is this why is it relervant, are there any closer estimates?). From the functional responce above we expected to have approximately `r 0.0957 * 1000` kilograms of above ground biomass. With probably higher variation. I estimated based on simple proportional relationship that sd for early successional gardens might be around (7 kg). To have standard deviation for a biomass equal to 7 we numerically estimated the necessary variance for the lognormal distribution. That turned out to be $\sim$ 0.07332.
+Unfortunately there are no estimates of variaiton for the functional responce, however totoal aboveground biomass for secondary forests was showed to be 46.4 $\pm$ 4.3 T/ha (standard deviation) which gives for our small plots an estimate of biomass around `r 46.4*0.0025*1000`kg/ha indicating rather low variabilitiy at least at the later stages of succession (what is the age of this forest and what type of foreswt is this why is it relervant, are there any closer estimates?). From the functional responce above we expected to have approximately `r 0.0957 * 1000` kilograms of above ground biomass. With probably higher variation. I estimated based on simple proportional relationship that sd for early successional gardens might be around (7 kg). To have standard deviation for a biomass equal to 7 we numerically estimated the necessary variance for the normal distribution. That turned out to be $\sigma^2_{block} \sim$ 0.07332.
 
-```{r, include = F}
-vals2 <- rlnorm(100000, log(95), 0.07332)
+```{r, include = T, echo=F}
+# Is this right?
+mu=log(95)
+sigma2 = 0.0054
+sd = sqrt(sigma2)
+
+# For the lognormal distribution
+# exp(mu + sigma2/2)                       # mean of lognormal
+# sqrt((exp(sigma2)-1)*exp(2*mu + sigma2)) # sd of lognorma
+
+# Relationship between variance of the normal distribution and its log-normal counterpart
+# sigmas2 <- seq(0.001, 0.3, by=0.0001)
+# lnormsd <- sqrt((exp(sigmas2)-1)*exp(2*mu + sigmas2))
+# ggplot(data.frame(lnormsd=lnormsd,
+#                   sigmas2 = sigmas2), 
+#        aes(y=lnormsd,x=sigmas2)) + geom_line()
+
+# Histogram of biomasses
+vals2 <- rlnorm(100000, mu, sd) # inputs are the mu and sd of the normal logvalues.
+#vals2 <- rlnorm(100000, 0, 0.07332)
 #sqrt(var(vals2))
 #hist(log(vals2), breaks = 100)
-hist(vals2, breaks=100)
+hist(vals2, breaks=100, probability=T)
+
+# Ggplot histogram
+# ggplot(df, aes(x=weight)) + 
+#   geom_histogram(binwidth=1)
 ```
-With these estimates we can now create a hypothetical dataset. Create a dataset with six treatments within six experimental blocks:
+Fig. Histogram of final biomasses coming from a log-normal distribution with expected standard deviation being $\pm$ 7kg and expected mean being around 95kg. 
+
+With these estimates we can now create a hypothetical dataset. Create a dataset with six treatments within six experimental blocks.
+
+# Randomization
 
 ```{r, echo=FALSE, warning=F, message=F}
+
+# Loading packages and defining functions
+
 library(ggplot2)
 library(lmerTest)
 library(simr)
 
-genDat <- function(ngard = 6,    # number of blocks/gardens
+genDatNorm <- function(ngard = 6,    # number of blocks/gardens
                     nplot = 6,    
-                    mu = 95,   # global average log[bio]
+                    mu = log(95),   # global average log[bio]
                     fung = 0,  # effect size for fungicide
                     ins = 0,  # effect size for insecticide
                     h1 = 0,     # effect size herbivory low
@@ -47,8 +77,8 @@ genDat <- function(ngard = 6,    # number of blocks/gardens
                     sdg = 0.07332, # standrad dev for the random effect
                     sd = 1){    # standard dev for the residuals 
   gard = rep(LETTERS[1:ngard], each = nplot)         # garden label
-  gardeff = rep(rlnorm(ngard, 0, sdg), each = nplot) # garden effect
-  ploteff = rlnorm(ngard*nplot, 0, sd)                # noise for plots
+  gardeff = rep(rnorm(ngard, 0, sdg), each = nplot) # garden effect
+  ploteff = rnorm(ngard*nplot, 0, sd)                # noise for plots
   # print(paste("Generating data with sd garden:",sdg," and error var", sd))
   # Simulate the explanatory variables
   treat <- c()
@@ -67,25 +97,22 @@ genDat <- function(ngard = 6,    # number of blocks/gardens
   ds$bio <- as.numeric(as.character(ds$bio))
   return(ds)
 }
-```
 
-
-# Randomization
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-randDat <- function(rands=9, pattern=c(1, 0, 0, -5,0,0), sdg=0.07332, sd=1){
-  # pattern <- c(int,fung,h1,h2,ins,pred)
+randDat <- function(rands=9, pattern=c(1, 0, 0,-0.05,0,0), mu=log(95), sdg=0.07332, sd=1){
+  # This function uses genDatNorm function to create random dataset and performs linear mixed model analysis. It reports the proportion of datasets where a specified pattern of significance has occured: pattern <- c(int,fung,h1,h2,ins,pred)
   fits <- c()
   dss <- data.frame()
   for (rand in 1:rands){
-    ds <- genDat(fung = pattern[2],
-                 h1 = pattern[3],
-                 h2 = pattern[4],
-                 ins=pattern[5],
-                 pred = pattern[6],
-                 sdg = sdg,
-                 sd = sd)
+    ds <- genDatNorm(mu=mu,
+                     fung = pattern[2],
+                     h1 = pattern[3],
+                     h2 = pattern[4],
+                     ins=pattern[5],
+                     pred = pattern[6],
+                     sdg = sdg,
+                     sd = sd)
     dss <- rbind(dss, as.data.frame(ds))
-    fitted_model <- lmer(log(bio)~treat+(1|gard), data = ds)
+    fitted_model <- lmer(bio~treat+(1|gard), data = ds)
     sfm <- summary(fitted_model)
     # print(sfm)
     # print(pattern)
@@ -95,22 +122,40 @@ randDat <- function(rands=9, pattern=c(1, 0, 0, -5,0,0), sdg=0.07332, sd=1){
   return(list(fits = c(fits), data=dss))
 }
 
+```
+
+Here we use our estimates to analyze power of our design to detect decrease in plant biomass of about 5kg. This will depend on the estimated between- and within-block variation. 
+
+```{r, echo=F}
 # pattern <- c(int,fung,h1,h2,ins,pred)
-mcrands <- 499
-sdg = 0.07332
-sd = 1
-eff_size = -5
-res <- randDat(rands=mcrands, pattern=c(1, 0, 0, eff_size,0,0), sdg, sd)
+mu = 95
+mcrands <- 99
+sdg = sqrt(sigma2)
+sd = sqrt(sigma2)
+eff_size = -15
+leff_size = log((mu + eff_size)/mu)
+```
+
+Here we show an example dataset generated using log-normal mean `r mu`, between-block standard deviation $\sqrt{\sigma_{block}} =$ `r round(sqrt((exp(sdg^2)-1)*exp(2*log(mu) + sdg^2)),2)`, within-block standard deviation $\sqrt{\sigma_{error}}=$ `r round(sqrt((exp(sd^2)-1)*exp(2*log(mu) + sd^2)),2)` and effect size of `r eff_size` kg.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+res <- randDat(rands=mcrands, 
+               pattern=c(1,0,0,leff_size,0,0),
+               mu=log(mu),
+               sdg,
+               sd)
 rd <- res$fits
 
 #An example dataset simulated based on our variance estimates.
 # An example simulat
 # ds <- genDat(ins=-10)
-plt <- ggplot(res$data, aes(x = treat, y = bio))
-plt + geom_jitter(aes(color=gard), width = 0.1, size=3) +
+plt <- ggplot(res$data, aes(x = treat, y = exp(bio)))
+plt + geom_jitter(width = 0.2, size=2, col="grey50", alpha=0.15) +
+  theme_bw() +
   stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
                  geom="errorbar", width=0.2, lwd=1.5) +
-  stat_summary(fun.y=mean, geom="point", cex = 5)
+  stat_summary(fun.y=mean, geom="point", cex = 5) +
+  ylab("Biomass [kg]")
 
 p_hat <- sum(rd/mcrands)
 # p_hat + c(-1,1)*1.96*sqrt(p_hat*(1-p_hat)/mcrands)
@@ -120,5 +165,6 @@ bootSE <- sqrt((sum((rd - mean(rd))^2)/(mcrands -1)))
 bootVar <- bootSE^2
 # p_hat + c(-1,1)*1.96*sqrt(bootVar/mcrands)
 ```
+Fig . Simulated `r mcrands` datasets with a hypothetical effect size of high herbivory (h2) to be `r eff_size`.
 
-So for the variance between blocks equals `r sdg` and the residual variability `r sd`, then we are able to detect an effect size of `r eff_size` kg with the power `r p_hat + c(-1,1)*1.96*sqrt(bootVar/mcrands)`. Using these assumptions lets see what type of the effect size we can detect. I should start with a hypothetical effect size that we would like to detect and proceed from there.
+With the above assumptions we were able to obtain the power of `r round(p_hat,2)` $\pm$ `r round(1.96*sqrt(bootVar/mcrands),2)` (95% bootstraped CI). Which is within acceptable level of statistical power.
