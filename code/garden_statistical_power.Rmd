@@ -8,9 +8,11 @@ output:
     df_print: paged
 ---
 
-## Introduction
+# Introduction
 
 Here we prrovide steps for power analysis of our simple experimental design with six treatments nested within si xexperimental blocks. Our goal was to test the effect of biotic factors (birds bats and ants, pathogenic fungi and insect herbivores) on the general descriptors and functional diversity of early (one year) succcesiional communitties in tropical forst. Despite the complexity of ecological process of succession, there community descriptor should not be affected by local contet if the variation between blocks is low. Sources of variation in biomass, abundance and species richness were identified and processes behind emergin gcontingent effects explained by feeding modes of dominant herbivores, their predators and plant species involved (Schmitz 2010 -book). Therefore, we kept our experiments in a distance that would allow for their statistical independence (min 200m apart - why is that ok?) but at the same time close enough that allows for treating differences between blocks as a random effect. To analyse power of our design we adapted a Monte Carlo simulations, where we simulated hypothetical data based on our predictions of the *between block variation* $\sigma_{block}$ and *residual variance* $\sigma_{error}$. We explored then what would be the possible effect size that we could detect given these estimates and discuss its biological meaning. In order to estimate power of our experimental setup (randomized complete block design with 6 treatments and six control plots) we used available estimates of variation in biomass, species richness and abundance of plants in tropical forests. It was difficult to find appropriate literature describing one year  regenration, therefore, sometimes we refer to the variatioin in the mature tropical forest. We also explore, how our design would deal with higher than predicted variation between blocks and residual variation.
+
+# Biomass
 
 ## Estimates of variation
 
@@ -22,7 +24,7 @@ TAGB = 247*(1 - exp(-0.068*age))^2.886
 plot(TAGB~age, type = "l")
 ```
 
-Unfortunately there are no estimates of variaiton for the functional responce, however totoal aboveground biomass for secondary forests was showed to be 46.4 $\pm$ 4.3 T/ha (standard deviation) which gives for our small plots an estimate of biomass around `r 46.4*0.0025*1000`kg/ha indicating rather low variabilitiy at least at the later stages of succession (what is the age of this forest and what type of foreswt is this why is it relervant, are there any closer estimates?). From the functional responce above we expected to have approximately `r 0.0957 * 1000` kilograms of above ground biomass. With probably higher variation. I estimated based on simple proportional relationship that sd for early successional gardens might be around (7 kg). To have standard deviation for a biomass equal to 7 we numerically estimated the necessary variance for the normal distribution. That turned out to be $\sigma^2_{block} \sim$ 0.07332.
+Unfortunately there are no estimates of variaiton for the functional responce, however totoal aboveground biomass for secondary forests was showed to be 46.4 $\pm$ 4.3 T/ha (standard deviation) which gives for our small plots an estimate of biomass around `r 46.4*0.0025*1000`kg/ha indicating rather low variabilitiy at least at the later stages of succession (what is the age of this forest and what type of forest is this why is it relervant, are there any closer estimates?). From the functional responce above we expected to have approximately `r 247*(1 - exp(-0.068))^2.886 * 1000` kilograms of above ground biomass. With probably higher variation. I estimated based on simple proportional relationship that sd for early successional gardens might be around (7 kg). To have standard deviation for a biomass equal to 7 we numerically estimated the necessary variance for the normal distribution. That turned out to be $\sigma^2_{block} \sim$ 0.0054.
 
 ```{r, include = T, echo=F}
 # Is this right?
@@ -56,7 +58,7 @@ Fig. Histogram of final biomasses coming from a log-normal distribution with exp
 
 With these estimates we can now create a hypothetical dataset. Create a dataset with six treatments within six experimental blocks.
 
-# Randomization
+## Randomization
 
 ```{r, echo=FALSE, warning=F, message=F}
 
@@ -129,10 +131,10 @@ Here we use our estimates to analyze power of our design to detect decrease in p
 ```{r, echo=F}
 # pattern <- c(int,fung,h1,h2,ins,pred)
 mu = 95
-mcrands <- 99
+mcrands <- 999
 sdg = sqrt(sigma2)
 sd = sqrt(sigma2)
-eff_size = -15
+eff_size = -12
 leff_size = log((mu + eff_size)/mu)
 ```
 
@@ -165,6 +167,10 @@ bootSE <- sqrt((sum((rd - mean(rd))^2)/(mcrands -1)))
 bootVar <- bootSE^2
 # p_hat + c(-1,1)*1.96*sqrt(bootVar/mcrands)
 ```
-Fig . Simulated `r mcrands` datasets with a hypothetical effect size of high herbivory (h2) to be `r eff_size`.
+Fig . Simulated `r mcrands` datasets with 6 treatments grouped within six blocks and a hypothetical effect size of high herbivory (h2) to be `r eff_size`.
 
 With the above assumptions we were able to obtain the power of `r round(p_hat,2)` $\pm$ `r round(1.96*sqrt(bootVar/mcrands),2)` (95% bootstraped CI). Which is within acceptable level of statistical power.
+
+# Number of species
+
+# Abundance
