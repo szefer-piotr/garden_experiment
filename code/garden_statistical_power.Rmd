@@ -173,4 +173,35 @@ With the above assumptions we were able to obtain the power of `r round(p_hat,2)
 
 # Number of species
 
+Based on Whitfeld (they had sems $\geq$ 5 cm and from this it is difficult to interpolate into $\geq$ 1cm dbh but) we expected to have approximately 30 $\pm$ 5 stems per our experimental plot. 
+
+```{r}
+# Poisson random numbers
+
+spsdg <- 5 # standared deviation for stems between blocks
+spsd <- 5  #standard deviation of the residual errors
+
+# What are these, what does 
+params <-  c(log(30),    0,  0, -0.1,  0,    0)
+treat <- c("c","f","h1","h2","i","p")
+gard <- c("g1","g2","g3","g4","g5","g6")
+dat <- expand.grid(treat = treat,gard=gard)
+
+lambda <- exp(params[1]+params[2]*(dat$treat == "f")+
+                params[3]*(dat$treat == "h1") + 
+                params[4]*(dat$treat == "h2") + 
+                params[5]*(dat$treat ==  "i") + 
+                params[6]*(dat$treat ==  "p")) +
+  rep(rnorm(6, 0, 5), each = 6)#random effect of block
+
+dat$abu <- rpois(36, lambda)
+
+abuplot <- ggplot(dat, aes(x = treat, y = abu))
+abuplot + geom_jitter(width = 0.1)
+
+fitted_model <- glmer(abu~treat+(1|gard), data=dat, family = "poisson")
+summary(fitted_model)
+
+```
+
 # Abundance
