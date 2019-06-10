@@ -177,15 +177,29 @@ Based on Whitfeld (they had sems $\geq$ 5 cm and from this it is difficult to in
 
 ```{r}
 # Poisson random numbers
-
 spsdg <- 5 # standared deviation for stems between blocks
 spsd <- 5  #standard deviation of the residual errors
 
 # What are these, what does 
 params <-  c(log(30),    0,  0, -0.1,  0,    0)
+
 treat <- c("c","f","h1","h2","i","p")
 gard <- c("g1","g2","g3","g4","g5","g6")
 dat <- expand.grid(treat = treat,gard=gard)
+
+datdf <- data.frame()
+for (rand in 1:mcrands){
+  
+  lambda <- exp(params[1]+params[2]*(dat$treat == "f")+
+                params[3]*(dat$treat == "h1") + 
+                params[4]*(dat$treat == "h2") + 
+                params[5]*(dat$treat ==  "i") + 
+                params[6]*(dat$treat ==  "p")) +
+  rep(rnorm(6, 0, 5), each = 6)#random effect of block
+  dat$abu <- rpois(36, lambda)
+  datdf <- rbind(datdf, dat)
+}
+
 
 lambda <- exp(params[1]+params[2]*(dat$treat == "f")+
                 params[3]*(dat$treat == "h1") + 
@@ -193,11 +207,10 @@ lambda <- exp(params[1]+params[2]*(dat$treat == "f")+
                 params[5]*(dat$treat ==  "i") + 
                 params[6]*(dat$treat ==  "p")) +
   rep(rnorm(6, 0, 5), each = 6)#random effect of block
-
 dat$abu <- rpois(36, lambda)
 
-abuplot <- ggplot(dat, aes(x = treat, y = abu))
-abuplot + geom_jitter(width = 0.1)
+abuplot <- ggplot(datdf, aes(x = treat, y = abu))
+abuplot + geom_jitter(width = 0.2, alpha=0.1, col="grey50")
 
 fitted_model <- glmer(abu~treat+(1|gard), data=dat, family = "poisson")
 summary(fitted_model)
