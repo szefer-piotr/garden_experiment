@@ -1,16 +1,22 @@
 ---
 title: "Garden Experiment Power Analysis"
-author: "Piotr Szefer"
-date: "June 3, 2019"
 output:
-  pdf_document: default
-  html_document:
-    df_print: paged
+  #pdf_document: default
+  html_document: default
+    #df_print: paged
 ---
 
 # Introduction
 
-Here we prrovide steps for power analysis of our simple experimental design with six treatments nested within si xexperimental blocks. Our goal was to test the effect of biotic factors (birds bats and ants, pathogenic fungi and insect herbivores) on the general descriptors and functional diversity of early (one year) succcesiional communitties in tropical forst. Despite the complexity of ecological process of succession, there community descriptor should not be affected by local contet if the variation between blocks is low. Sources of variation in biomass, abundance and species richness were identified and processes behind emergin gcontingent effects explained by feeding modes of dominant herbivores, their predators and plant species involved (Schmitz 2010 -book). Therefore, we kept our experiments in a distance that would allow for their statistical independence (min 200m apart - why is that ok?) but at the same time close enough that allows for treating differences between blocks as a random effect. To analyse power of our design we adapted a Monte Carlo simulations, where we simulated hypothetical data based on our predictions of the *between block variation* $\sigma_{block}$ and *residual variance* $\sigma_{error}$. We explored then what would be the possible effect size that we could detect given these estimates and discuss its biological meaning. In order to estimate power of our experimental setup (randomized complete block design with 6 treatments and six control plots) we used available estimates of variation in biomass, species richness and abundance of plants in tropical forests. It was difficult to find appropriate literature describing one year  regenration, therefore, sometimes we refer to the variatioin in the mature tropical forest. We also explore, how our design would deal with higher than predicted variation between blocks and residual variation.
+In our experiment we assumed simple one-way classification with one random effect (random intercept model) of a following form:
+$$\begin{matrix} \mathbb{E} [y_{ij}|a_j] = \mu + \beta_ix_{ij} + a_j + \varepsilon_{ij} \\ y_{ij}|a_j \sim indep.\ G\\ a_j \sim i.i.d.\ \mathcal{N}(0,\sigma_a^2) \end{matrix}$$
+where, $y_{ij}$ represents community descriptor under the treatement $i \in (1,..., 6)$, within the block $j \in (1,..., 6)$, and $G$ is a distribution for the $y_{ij}|a_j$ with variance $\sigma^2_{\varepsilon}$.
+
+In order to calculate power of our experimental setup (randomized complete block design with six treatments and six control plots) we used estimates for species richness and abundance of plants in young successional tropical forests available in the literature. These included mean values (intercept), and local (within block) and regional (between block) variations of these descriptors.
+
+For the purposes of our exploratory analyses we focused on considerably strong effects of approximately 20% change of the mean relative to the baseline values of our descriptors. With a given effect size we were able to estimate the numbe rof blocks optimal to obtain acceptable 80% power. Next, we explored how different levels of variation between blocks and residual variation affect power of our tests. We also explore how sensitive was power to variability of estimated parameters.
+
+We performed Monte Carlo simulations, using the *rsims* package (Green and MacLeod, 2016) in R to simulate hypothetical data-sets based on expected *random effect variation* (between block variation) $\sigma_{a}$, *within block variation* or *residual variance* $\sigma^2_{\varepsilon}$, for a given effect size.
 
 # Biomass
 
@@ -18,7 +24,7 @@ Here we prrovide steps for power analysis of our simple experimental design with
 
 It is difficult to find estimates of variation in biomass for early successional tropical forests. In one paper Sierra et al. (2007) estimated a function of secondary forest biomass. Using their estimates of the biomass as a function of the forest age:
 
-```{r setup, include=TRUE, echo=F}
+```{r setup, include=TRUE, echo=F, fig.height=3, fig.width=3}
 age=seq(0,50, by=0.5)
 TAGB = 247*(1 - exp(-0.068*age))^2.886
 plot(TAGB~age, type = "l")
@@ -26,33 +32,15 @@ plot(TAGB~age, type = "l")
 
 Unfortunately there are no estimates of variaiton for the functional responce, however totoal aboveground biomass for secondary forests was showed to be 46.4 $\pm$ 4.3 T/ha (standard deviation) which gives for our small plots an estimate of biomass around `r 46.4*0.0025*1000`kg/ha indicating rather low variabilitiy at least at the later stages of succession (what is the age of this forest and what type of forest is this why is it relervant, are there any closer estimates?). From the functional responce above we expected to have approximately `r 247*(1 - exp(-0.068))^2.886 * 1000` kilograms of above ground biomass. With probably higher variation. I estimated based on simple proportional relationship that sd for early successional gardens might be around (7 kg). To have standard deviation for a biomass equal to 7 we numerically estimated the necessary variance for the normal distribution. That turned out to be $\sigma^2_{block} \sim$ 0.0054.
 
+
 ```{r, include = T, echo=F}
 # Is this right?
 mu=log(95)
 sigma2 = 0.0054
 sd = sqrt(sigma2)
-
-# For the lognormal distribution
-# exp(mu + sigma2/2)                       # mean of lognormal
-# sqrt((exp(sigma2)-1)*exp(2*mu + sigma2)) # sd of lognorma
-
-# Relationship between variance of the normal distribution and its log-normal counterpart
-# sigmas2 <- seq(0.001, 0.3, by=0.0001)
-# lnormsd <- sqrt((exp(sigmas2)-1)*exp(2*mu + sigmas2))
-# ggplot(data.frame(lnormsd=lnormsd,
-#                   sigmas2 = sigmas2), 
-#        aes(y=lnormsd,x=sigmas2)) + geom_line()
-
 # Histogram of biomasses
-vals2 <- rlnorm(100000, mu, sd) # inputs are the mu and sd of the normal logvalues.
-#vals2 <- rlnorm(100000, 0, 0.07332)
-#sqrt(var(vals2))
-#hist(log(vals2), breaks = 100)
+vals2 <- rlnorm(100000, mu, sd) # inputs are the mu and sd of the noorm vals
 hist(vals2, breaks=100, probability=T)
-
-# Ggplot histogram
-# ggplot(df, aes(x=weight)) + 
-#   geom_histogram(binwidth=1)
 ```
 Fig. Histogram of final biomasses coming from a log-normal distribution with expected standard deviation being $\pm$ 7kg and expected mean being around 95kg. 
 
@@ -67,6 +55,8 @@ With these estimates we can now create a hypothetical dataset. Create a dataset 
 library(ggplot2)
 library(lmerTest)
 library(simr)
+library(lattice)
+library(latticeExtra)
 
 genDatNorm <- function(ngard = 6,    # number of blocks/gardens
                     nplot = 6,    
@@ -100,12 +90,14 @@ genDatNorm <- function(ngard = 6,    # number of blocks/gardens
   return(ds)
 }
 
-randDat <- function(rands=9, pattern=c(1, 0, 0,-0.05,0,0), mu=log(95), sdg=0.07332, sd=1){
+randDat <- function(rands=9, pattern=c(1, 0, 0,-0.05,0,0), mu=log(95), sdg=0.07332, sd=1, ngard = 6, nplot = 6){
   # This function uses genDatNorm function to create random dataset and performs linear mixed model analysis. It reports the proportion of datasets where a specified pattern of significance has occured: pattern <- c(int,fung,h1,h2,ins,pred)
   fits <- c()
   dss <- data.frame()
   for (rand in 1:rands){
-    ds <- genDatNorm(mu=mu,
+    ds <- genDatNorm(ngard = ngard,
+                     nplot = nplot,
+                     mu=mu,
                      fung = pattern[2],
                      h1 = pattern[3],
                      h2 = pattern[4],
@@ -131,11 +123,39 @@ Here we use our estimates to analyze power of our design to detect decrease in p
 ```{r, echo=F}
 # pattern <- c(int,fung,h1,h2,ins,pred)
 mu = 95
-mcrands <- 999
+mcrands <- 99
 sdg = sqrt(sigma2)
 sd = sqrt(sigma2)
 eff_size = -12
 leff_size = log((mu + eff_size)/mu)
+
+library(simr)
+library(ggplot2)
+
+eff_size = -10
+mu = 95
+leff_size = log((mu + eff_size)/mu)
+treat <- c("c","f","h1","h2","i","p")
+gard <- LETTERS[1:20]
+
+dat <- expand.grid(gard=gard, treat = treat)
+
+bioexp <- makeLmer(y~treat+(1|gard),
+                     fixef = c(log(95),0,0,leff_size,-leff_size,-leff_size/2), 
+                     VarCorr = 0.01,
+                     sigma = sqrt(0.01),
+                     data=dat)
+
+
+dt <- getData(bioexp)
+
+plt <- ggplot(dt, aes(x = treat, y = y, colour = gard))
+plt + geom_jitter(width = 0.2, size=2, alpha=0.15) +
+  theme_bw() +
+  ylab("Biomass [kg]")
+
+pc2 <- powerCurve(bioexp, along = "gard", breaks=c(3,6,9,12), nsim=99)
+plot(pc2)
 ```
 
 Here we show an example dataset generated using log-normal mean `r mu`, between-block standard deviation $\sqrt{\sigma_{block}} =$ `r round(sqrt((exp(sdg^2)-1)*exp(2*log(mu) + sdg^2)),2)`, within-block standard deviation $\sqrt{\sigma_{error}}=$ `r round(sqrt((exp(sd^2)-1)*exp(2*log(mu) + sd^2)),2)` and effect size of `r eff_size` kg.
@@ -171,11 +191,17 @@ Fig . Simulated `r mcrands` datasets with 6 treatments grouped within six blocks
 
 With the above assumptions we were able to obtain the power of `r round(p_hat,2)` $\pm$ `r round(1.96*sqrt(bootVar/mcrands),2)` (95% bootstraped CI). Which is within acceptable level of statistical power.
 
-# Number of species
+# Species richness and woody plant abundance
 
-Based on Whitfeld (they had sems $\geq$ 5 cm and from this it is difficult to interpolate into $\geq$ 1cm dbh but) we expected to have approximately 30 $\pm$ 5 stems per our experimental plot. 
+## Estimates of variation
 
-```{r}
+We expected to find approximately 30 $\pm$ 5 plant species (herbaceous and woody plants) per plot (Leps, personal communication). It is difficult to estimates for the abundance of stems having DBH greater of equal to 1cm. However, Based on Whitfeld et al. (2012) and our own experience we expected to have (similarily to the number of species) approximately 30 $\pm$ 5 stems per 25m$^2$ experimental plot.
+
+## Randomization
+
+As above we create random dataset for for number of species and abundance of stems $\leq$ 1 cm DBH, and estimate the expected power of our design.
+
+```{r,echo=FALSE, warning=FALSE, message=FALSE}
 # Poisson random numbers
 spsdg <- 5 # standared deviation for stems between blocks
 spsd <- 5  #standard deviation of the residual errors
@@ -210,11 +236,86 @@ lambda <- exp(params[1]+params[2]*(dat$treat == "f")+
 dat$abu <- rpois(36, lambda)
 
 abuplot <- ggplot(datdf, aes(x = treat, y = abu))
-abuplot + geom_jitter(width = 0.2, alpha=0.1, col="grey50")
+abuplot + geom_jitter(width = 0.2, alpha=0.1, col="grey50") + 
+  xlab("Treatment") + ylab("No of stems per 25 m^2 plot")
 
-fitted_model <- glmer(abu~treat+(1|gard), data=dat, family = "poisson")
-summary(fitted_model)
+#fitted_model <- glmer(abu~treat+(1|gard), data=dat, family = "poisson")
+#summary(fitted_model)
 
 ```
 
-# Abundance
+Fig X. ...
+
+# Sample  size, within-block and between-block variation
+
+Here we want do analyze sensitivity of our estimates on the expected power of our analyses. We perform a randomization manipulating three parameters: number of samples, between block variation and within block noise (within block variation) 
+
+```{r}
+# mcrands <- 999
+# wbsd <- round(sqrt(seq(0.0005, 0.01, by = 0.0025)),3)
+# bbsd <- round(sqrt(seq(0.0005, 0.01, by = 0.0025)),3)
+# ssize <- seq(5, 20, by=1)#sample size
+# # leff_size varry the effect size? 
+# # Random effect standard deviation
+# resmatgard1 <- matrix(0, 
+#                       nrow = length(wbsd),
+#                       ncol = length(ssize))
+# rownames(resmatgard1) <- as.character(round(wbsd, 3))
+# colnames(resmatgard1) <- ssize
+# 
+# for(row in wbsd){
+#   for(col in ssize){
+#     temp_res <- randDat(rands=mcrands,
+#                     pattern=c(1,0,0,leff_size,0,0),
+#                     mu=log(mu),
+#                     sdg = row,
+#                     sd = sd,
+#                     ngard = col,
+#                     nplot = 6)
+#     rd <- temp_res$fits
+#     p_hat <- sum(rd/mcrands)
+#     
+#     resmatgard1[as.character(row),as.character(col)] <- p_hat
+#     
+#   }
+# }
+# 
+# levelplot(resmatgard1, xlab = "Between block variation",
+#           ylab = "Number of blocks") +
+#   as.layer(contourplot(resmatgard1, col = "red"))
+# 
+# 
+# # With simr
+# vars <- seq(0.003, 0.090, by=0.015)
+# resmatgard1 <- matrix(0, 
+#                       nrow = length(vars),
+#                       ncol = length(vars))
+# rownames(resmatgard1) <- as.character(round(vars, 3))
+# colnames(resmatgard1) <- as.character(round(vars, 3))
+# 
+# mcrands <- 99
+# counter <- 1
+# dims    <- length(vars)
+# for (i in vars){
+#   for(j in vars){
+#     counter <- counter + 1
+#     print(counter/(dims*dims))
+#     VarCorr(bio_rbl) <- i  #
+#     sigma(bio_rbl) <- sqrt(j)
+#     est <- powerSim(bio_rbl, nsim = mcrands)
+#     resmatgard1[as.character(i),
+#                 as.character(j)] <- summary(est)$mean
+#   }
+# }
+# 
+# levelplot(resmatgard1, ylab = "Sigma",
+#           xlab = "VarCorr")
+
+```
+
+# Literature
+
+Green P, MacLeod CJ (2016). “simr: an R package for power analysis
+of generalised linear mixed models by simulation.” _Methods in
+Ecology and Evolution_, *7*(4), 493-498. doi:
+10.1111/2041-210X.12504
