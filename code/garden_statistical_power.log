@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.5.14)  24 JUN 2019 16:17
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2019.5.14)  27 JUN 2019 20:25
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -621,74 +621,69 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 136.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 132.
 
 (/usr/share/texlive/texmf-dist/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 136.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 132.
 
 (/usr/share/texlive/texmf-dist/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 136
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 132
 .
 (/usr/share/texlive/texmf-dist/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 136
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 132
 .
 (/usr/share/texlive/texmf-dist/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 136.
+(Font)              <10> on input line 132.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 136.
+(Font)              <7> on input line 132.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 136.
-LaTeX Font Info:    Try loading font information for U+msa on input line 136.
+(Font)              <5> on input line 132.
+LaTeX Font Info:    Try loading font information for U+msa on input line 132.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 ) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 136.
+LaTeX Font Info:    Try loading font information for U+msb on input line 132.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 ) (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msb.cfg
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
-<garden_statistical_power_files/figure-latex/setup-1.pdf, id=4, 184.69pt x 142.
-5325pt>
+<garden_statistical_power_files/figure-latex/setup-1.pdf, id=4, 255.95625pt x 2
+14.8025pt>
 File: garden_statistical_power_files/figure-latex/setup-1.pdf Graphic file (typ
 e pdf)
 <use garden_statistical_power_files/figure-latex/setup-1.pdf>
 Package pdftex.def Info: garden_statistical_power_files/figure-latex/setup-1.pd
-f  used on input line 173.
-(pdftex.def)             Requested size: 184.68953pt x 142.53214pt.
+f  used on input line 170.
+(pdftex.def)             Requested size: 255.95561pt x 214.80197pt.
+<garden_statistical_power_files/figure-latex/setup-2.pdf, id=5, 247.92625pt x 2
+46.9225pt>
+File: garden_statistical_power_files/figure-latex/setup-2.pdf Graphic file (typ
+e pdf)
+<use garden_statistical_power_files/figure-latex/setup-2.pdf>
+Package pdftex.def Info: garden_statistical_power_files/figure-latex/setup-2.pd
+f  used on input line 171.
+(pdftex.def)             Requested size: 247.92564pt x 246.92188pt.
+
+Overfull \hbox (36.34845pt too wide) in paragraph at lines 170--177
+[][] []
+ []
+
 [1
 
-{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map} <./garden_st
-atistical_power_files/figure-latex/setup-1.pdf>]
-<garden_statistical_power_files/figure-latex/unnamed-chunk-1-1.pdf, id=30, 422.
-57875pt x 283.0575pt>
-File: garden_statistical_power_files/figure-latex/unnamed-chunk-1-1.pdf Graphic
- file (type pdf)
-<use garden_statistical_power_files/figure-latex/unnamed-chunk-1-1.pdf>
-Package pdftex.def Info: garden_statistical_power_files/figure-latex/unnamed-ch
-unk-1-1.pdf  used on input line 189.
-(pdftex.def)             Requested size: 422.5906pt x 283.06543pt.
-<garden_statistical_power_files/figure-latex/unnamed-chunk-3-1.pdf, id=31, 457.
-71pt x 320.19624pt>
-File: garden_statistical_power_files/figure-latex/unnamed-chunk-3-1.pdf Graphic
- file (type pdf)
-<use garden_statistical_power_files/figure-latex/unnamed-chunk-3-1.pdf>
-Package pdftex.def Info: garden_statistical_power_files/figure-latex/unnamed-ch
-unk-3-1.pdf  used on input line 203.
-(pdftex.def)             Requested size: 457.71587pt x 320.20033pt.
-[2 <./garden_statistical_power_files/figure-latex/unnamed-chunk-1-1.pdf>]
-LaTeX Font Info:    Try loading font information for T1+lmtt on input line 205.
+{/usr/share/texlive/texmf-dist/fonts/map/pdftex/updmap/pdftex.map}]
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 203.
 
 (/usr/share/texlive/texmf-dist/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
@@ -701,15 +696,15 @@ See the inputenc package documentation for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.211 \end{verbatim}
+l.205 \end{verbatim}
                      
 Here is how much of TeX's memory you used:
- 12472 strings out of 492701
- 183421 string characters out of 6134504
- 290518 words of memory out of 5000000
- 16147 multiletter control sequences out of 15000+600000
- 41056 words of font info for 59 fonts, out of 8000000 for 9000
+ 12462 strings out of 492701
+ 183012 string characters out of 6134504
+ 323375 words of memory out of 5000000
+ 16143 multiletter control sequences out of 15000+600000
+ 40890 words of font info for 57 fonts, out of 8000000 for 9000
  1137 hyphenation exceptions out of 8191
- 32i,6n,38p,9871b,370s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 32i,6n,38p,43030b,336s stack positions out of 5000i,500n,10000p,200000b,80000s
 
 !  ==> Fatal error occurred, no output PDF file produced!
