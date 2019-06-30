@@ -863,3 +863,17 @@ plt <- ggplot(dt, aes(x = treat, y = y, colour = gard))
 plt + geom_jitter(width = 0.2, size=2, alpha=0.15) +
   theme_bw() +
   ylab("Species richness")
+
+
+
+
+
+tagb <- 100
+mu=log(tagb)
+sigma2 = 0.01#20
+sd = sqrt(sigma2)
+
+# Histogram of biomasses
+vals2 <- rlnorm(100000, mu, sd) # inputs are the mu and sd of the noorm vals
+hist(vals2, breaks=100, probability=T)
+sd(vals2)

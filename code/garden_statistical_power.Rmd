@@ -8,7 +8,7 @@ output:
 
 # Introduction
 
-To study the effects of biotic factors on early secondary successional plant community we decided to perform manipulative experiments using randomized complete block (RCB) design. For our data we assumed simple one-way classification with one random effect (random intercept model) of a following form:
+To study the effects of biotic factors on early secondary successional plant community we decided to perform manipulative experiments using randomized complete block (RCB) design. For our data we assumed simple one-way classification with one random effect (random intercept model) of the following form:
 $$\begin{matrix} \mathbb{E} [y_{ij}|a_j] = \mu + \beta_ix_{ij} + a_j + \varepsilon_{ij} \\ y_{ij}|a_j \sim indep.\ G\\ a_j \sim i.i.d.\ \mathcal{N}(0,\sigma_a^2) \end{matrix}$$
 where, $y_{ij}$ represents community descriptor under treatement $i \in (1,..., 6)$, within block $j \in (1,..., 6)$, and where $G$ is a distribution for $y_{ij}|a_j$ with variance $\sigma^2_{\varepsilon}$.
 
@@ -22,7 +22,7 @@ For the purposes of our exploratory analyses we focused on considerably strong e
 
 ## Estimates of variation
 
-There are not many accurate estimations of total above-ground biomass for one year old tropical forest succession. Often data available in the literature depend highly on the previous land use. In their revview Martin et al. (2013) we found estimate for TAGB to be equal to $\sim$ 14 $Mg * ha^{-1}$. However, these values are more representative to vegetation undergoing secondary succession after pasture abandonment, thatn to forest gaps within forest matrix. In different estimation Mascaro et al (2005) found that after one year of regeneration after hurrican distrurbce biomass ranged largly with mean 78 $\pm$ 15 $Mg * ha^{-1}$. From our personal experience we new that these estimates were either too low or too high. Second study provided us also with estimates of variation. However, we treated this as an upper limit for variation since this type of disturbance creates a variable initial environment for regenration. In our setup we didn't expect such a high variability as we prepared plots in similar fassion trying to minimise differences caused by gap creation. Therefore we confidently assumed that in our 25 m$^2$ plots we would found approximately 100 kg of plant biomass with both $\sigma_{a}$ and $\sigma_{\varepsilon}$ of around 10 kg.
+Total above-ground biomass (TAGB) estimates for one year old tropical forest succession are scarce in the literature. In their comprehensive review by Martin et al. (2013) compiled few regenerational plots one year after abandonment, from which TAGB can be estimated to be $\sim$ 14 Mg $\times$ ha $^{-1}$ (which gives `r 14 * 1000 * 0.0025` kg $\times$ 25 m$^{2}$ - vegetation plot used in our study). However, source studies were restricted only to secondary succession after pasture abandonment, which may affect biomass accumulation rates. In different study Mascaro et al. (2005) found that for forest gap succession following hurricane disturbance biomass after one year ranged widely with mean 78 $\pm$ 15 Mg $\times$ ha $^{-1}$ (`r 78 * 1000 * 0.0025` kg $\times$ 25 m$^{2}$). In our case we expected for the average biomass of experimental  plot to fall between these two values and we treated the above estimates as a lower and upper limit for our estimates. Firstly because we expect higher biomass accumulation rates in the primary forest matrix than in spontaneous succession in pastures. Secondly because we prepared plots in similar fashion trying to minimise unpredicted differences in gaps created after hurrican disturbance with variable initial conditions for regeneration. Study by Mascaro et al. (2005) provided us with estimates of variation, which from the same reason as  above we treated to be an upper limit for our system. Therefore we confidently assumed that in our 25 m$^2$ plots we would found approximately 100 kg of plant biomass with both $\sigma_{a}$ and $\sigma_{\varepsilon}$ of around 10 kg.
 
 ```{r setup, include=TRUE, echo=F, fig.height=4, fig.width=4, align="center"}
 
@@ -57,8 +57,8 @@ With the estimates for $\mu$, $\sigma^2_{a}$, $\sigma^2_{\varepsilon}$ and selec
 ```{r, echo=F, warning=FALSE, message=F, align = "center", fig.show='hold',  fig.height=3, fig.width=5}
 # pattern <- c(int,fung,h1,h2,ins,pred)
 
-mu = 95
-mcrands <- 99
+mu = tagb
+mcrands <- 9
 sdg = sqrt(sigma2)
 sd = sqrt(sigma2)
 eff_size = 10
@@ -66,6 +66,7 @@ leff_size = log((mu + eff_size)/mu)
 
 library(simr)
 library(ggplot2)
+library(latticeExtra)
 
 # Create dataset
 treat <- c("c","f","h1","h2","i","p")
@@ -115,7 +116,6 @@ As above we created random dataset for for number of species and abundance of st
 
 ```{r,echo=FALSE, warning=FALSE, message=FALSE, fig.show='hold'}
 mu = 30
-mcrands <- 99
 sdg = 5
 sd = 5
 eff_size = -5
@@ -156,65 +156,37 @@ Fig X. ...
 Here we want do analyze sensitivity of our estimates on the expected power of our analyses. We perform a randomization manipulating three parameters: number of samples, between block variation and within block noise (within block variation) 
 
 ```{r}
-# mcrands <- 999
-# wbsd <- round(sqrt(seq(0.0005, 0.01, by = 0.0025)),3)
-# bbsd <- round(sqrt(seq(0.0005, 0.01, by = 0.0025)),3)
-# ssize <- seq(5, 20, by=1)#sample size
-# # leff_size varry the effect size? 
-# # Random effect standard deviation
-# resmatgard1 <- matrix(0, 
-#                       nrow = length(wbsd),
-#                       ncol = length(ssize))
-# rownames(resmatgard1) <- as.character(round(wbsd, 3))
-# colnames(resmatgard1) <- ssize
-# 
-# for(row in wbsd){
-#   for(col in ssize){
-#     temp_res <- randDat(rands=mcrands,
-#                     pattern=c(1,0,0,leff_size,0,0),
-#                     mu=log(mu),
-#                     sdg = row,
-#                     sd = sd,
-#                     ngard = col,
-#                     nplot = 6)
-#     rd <- temp_res$fits
-#     p_hat <- sum(rd/mcrands)
-#     
-#     resmatgard1[as.character(row),as.character(col)] <- p_hat
-#     
-#   }
-# }
-# 
+
 # levelplot(resmatgard1, xlab = "Between block variation",
 #           ylab = "Number of blocks") +
 #   as.layer(contourplot(resmatgard1, col = "red"))
-# 
-# 
-# # With simr
-# vars <- seq(0.003, 0.090, by=0.015)
-# resmatgard1 <- matrix(0, 
-#                       nrow = length(vars),
-#                       ncol = length(vars))
-# rownames(resmatgard1) <- as.character(round(vars, 3))
-# colnames(resmatgard1) <- as.character(round(vars, 3))
-# 
-# mcrands <- 99
-# counter <- 1
-# dims    <- length(vars)
-# for (i in vars){
-#   for(j in vars){
-#     counter <- counter + 1
-#     print(counter/(dims*dims))
-#     VarCorr(bio_rbl) <- i  #
-#     sigma(bio_rbl) <- sqrt(j)
-#     est <- powerSim(bio_rbl, nsim = mcrands)
-#     resmatgard1[as.character(i),
-#                 as.character(j)] <- summary(est)$mean
-#   }
-# }
-# 
-# levelplot(resmatgard1, ylab = "Sigma",
-#           xlab = "VarCorr")
+
+vars <- seq(0.003, 0.30, by=0.015)
+resmatgard1 <- matrix(0, 
+                      nrow = length(vars),
+                      ncol = length(vars))
+rownames(resmatgard1) <- as.character(round(vars, 3))
+colnames(resmatgard1) <- as.character(round(vars, 3))
+
+
+mod <- bioexp
+mcrands <- 9
+
+dims    <- length(vars)
+for (i in vars){
+  for(j in vars){
+    counter <- counter + 1
+    VarCorr(mod) <- i  #
+    sigma(mod) <- sqrt(j)
+    est <- powerSim(mod, nsim = mcrands, progress = F)
+    resmatgard1[as.character(i),
+                as.character(j)] <- summary(est)$mean
+  }
+}
+
+levelplot(resmatgard1, ylab = "Sigma",
+          xlab = "VarCorr")
+
 
 ```
 
@@ -224,3 +196,7 @@ Green P, MacLeod CJ (2016). “simr: an R package for power analysis
 of generalised linear mixed models by simulation.” _Methods in
 Ecology and Evolution_, *7*(4), 493-498. doi:
 10.1111/2041-210X.12504
+
+Martin, P. A., Newton, A. C., & Bullock, J. M. (2013). Carbon pools recover more quickly than plant biodiversity in tropical secondary forests. Proceedings of the Royal Society B: Biological Sciences. Retrieved from https://royalsocietypublishing.org/doi/abs/10.1098/rspb.2013.2236
+
+Mascaro, J., Perfecto, I., Barros, O., Boucher, D. H., Cerda, I. G. D. L., Ruiz, J., & Vandermeer, J. (2005). Aboveground Biomass Accumulation in a Tropical Wet Forest in Nicaragua Following a Catastrophic Hurricane Disturbance. Biotropica, 37(4), 600–608. doi: 10.1111/j.1744-7429.2005.00077.x
