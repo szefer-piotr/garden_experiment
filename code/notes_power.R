@@ -630,6 +630,9 @@ plt + geom_jitter(width = 0.2, size=2, alpha=0.15) +
 powerSim(bio_rbl)
 
 vars <- seq(0.003, 0.090, by=0.015)
+lognormSD <- sqrt(exp(sqrt(vars) - 1) * exp(2*mu+sqrt(vars)))
+
+
 resmatgard1 <- matrix(0, 
                       nrow = length(vars),
                       ncol = length(vars))
@@ -874,6 +877,73 @@ sigma2 = 0.01#20
 sd = sqrt(sigma2)
 
 # Histogram of biomasses
-vals2 <- rlnorm(100000, mu, sd) # inputs are the mu and sd of the noorm vals
+vals2 <- rlnorm(10000, mu, sd) # inputs are the mu and sd of the noorm vals
 hist(vals2, breaks=100, probability=T)
 sd(vals2)
+
+
+# Levelplot dla rozkladu poissona
+
+mu = 30
+sdg = 6
+sd = 6
+eff_size = 6
+leff_size = log((mu + eff_size)/mu)
+
+# Create dataset
+treat <- c("c","f","h1","h2","i","p")
+gard <- LETTERS[1:20]
+
+dat <- expand.grid(gard=gard, treat = treat)
+
+richexp <- makeGlmer(y~treat+(1|gard),
+                     family = "poisson",
+                     fixef = c(log(mu),                    # control
+                               -leff_size,                # fungi
+                               (leff_size/2+leff_size)/2, # herb moderate
+                               leff_size,                 # herbivory high
+                               -leff_size,                # insecticide
+                               leff_size/2),              # predator, 
+                     VarCorr = 0.0225, # estimated such that s_e is ~ 5. 0.0225
+                     data=dat)
+
+dt <- getData(richexp)
+
+par(mfrow=c(1,2))
+plt <- ggplot(dt, aes(x = treat, y = y, colour = gard))
+plt + geom_jitter(width = 0.2, size=2, alpha=0.5) +
+  theme_bw() +
+  ylab("Species richness") + 
+  xlab("Treatment")
+
+mus <- seq(2,10,by=1)
+
+respois <- c()
+for(mu in mus){
+  print(mu)
+  fixef(richexp) = c(log(mu),                    # control
+            -leff_size,                # fungi
+            (leff_size/2+leff_size)/2, # herb moderate
+            leff_size,                 # herbivory high
+            -leff_size,                # insecticide
+            leff_size/2)
+  est <- powerSim(richexp, nsim = mcrands, progress = F)
+  respois <- c(respois,summary(est)$mean)
+}
+
+respois
+
+# Rename rows and columns
+newnames <- c()
+for(value in vars){
+  vals <- rlnorm(10000, log(95), sqrt(value))
+  newnames <- c(newnames, sd(vals))
+}
+
+newnames <- round(newnames, 0)
+rownames(resmatgard1) <- as.character(newnames)
+colnames(resmatgard1) <- as.character(newnames)
+
+levelplot(resmatgard1, ylab = "Within block variation (Sigma)",
+          xlab = "Between block variation (VarCorr)") +
+  as.layer(contourplot(resmatgard1, col = "red"))

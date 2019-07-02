@@ -1,31 +1,28 @@
 ---
 title: "Garden Experiment Power Analysis"
 output:
-  html_document: default
-    #df_print: paged
+  word_document: default
   pdf_document: default
+  html_document: default
 ---
 
 # Introduction
 
 To study the effects of biotic factors on early secondary successional plant community we decided to perform manipulative experiments using randomized complete block (RCB) design. For our data we assumed simple one-way classification with one random effect (random intercept model) of the following form:
 $$\begin{matrix} \mathbb{E} [y_{ij}|a_j] = \mu + \beta_ix_{ij} + a_j + \varepsilon_{ij} \\ y_{ij}|a_j \sim indep.\ G\\ a_j \sim i.i.d.\ \mathcal{N}(0,\sigma_a^2) \end{matrix}$$
-where, $y_{ij}$ represents community descriptor under treatement $i \in (1,..., 6)$, within block $j \in (1,..., 6)$, and where $G$ is a distribution for $y_{ij}|a_j$ with variance $\sigma^2_{\varepsilon}$.
+where, $y_{ij}$ represents community descriptor under treatement $i$, within block $j$, and where $G$ is a distribution for $y_{ij}|a_j$ with variance $\sigma^2_{\varepsilon}$.
 
-Biomass, species richness and diversity are important drivers of plant community dynamics (Lohbeck, Poorter,..., Bongers; 2015) In order to calculate number of samples, in this case number of blocks each containing complete set of six experimental treatments (see the main text for details), we used parameter values reported in the literature, or based on our own experience. From the model equation we can see that for any community descriptor we need three estimates: baseline value $\mu$; within block (local) variation $\sigma^2_{\varepsilon}$); between block (regional) variation $\sigma^2_{a}$. Therefore for plant total above ground biomass, species richness, and abundance we assumed values of 9 parameters.
+Biomass, species richness and diversity are important drivers of tropical plant community dynamics (Lohbeck, Poorter, Martínez-Ramos, and Bongers, 2015). In order to calculate number of samples (in this case number of blocks each containing complete set of six experimental treatments - see the main text for details), we used parameter values found in the literature, or based on our own experience. Model equation suggests that for any community descriptor in oreder to create a hypothetical data set we need to guess three parameter values for baseline average value $\mu$, within block (local) variation $\sigma^2_{\varepsilon}$),and between block (regional) variation $\sigma^2_{a}$. Therefore, for the total above ground biomass (TAGB) of plants, species richness, and abundance we need to assume values for 9 parameters.
 
-*As mentioned in the main text we anticipated a strong increase in biomass, richness and species diversity for the insecticide treated plots and equally strong decrease in these characteristics when high number of herbivores added to the plot. Predator exclosure should have moderate effect on the community as well as intermediate levels of herbivory addition. However, we suspect, that the effect of moderate herbivor addition should be weaker than that of the high herbivory addition but stronger than that of predators. We did not expect fungi to have strong effect on the biomass but rather on the abundance and species richness.*
-
-For the purposes of our exploratory analyses we focused on considerably strong effects of approximately 15% change for the mean under given treatment. With a specified effect size we were able to estimate the number of blocks optimal to obtain 80% statistical power. We also explored how different levels of variation between blocks and residual variation affect power of our tests. We also explore how power would change in resonse to changing values of our assumed parameters. Power calcuations were performed using the *simr* package (Green and MacLeod, 2016) in R.
+To perform power analysis we also need to declare magnitudes of the effect for each of our experimental treatemnt. As mentioned in the main text we anticipated a strong increase in biomass, richness and species diversity for the insecticide treated plots, and equally strong decrease in these community characteristics when high number of herbivores added to the plot. We expected predator exclosure to have moderate negative effect on the community as well as intermediate levels of herbivory addition. However, we suspect, that the effect of moderate herbivor addition should be weaker than that of the high herbivory addition but stronger than that of predators. We did not expect fungi to have strong effect on the biomass but rather on the abundance and species richness. Here by strong effects we mean shift in the baseline value of the descriptor of approximately 15% under given treatment. Having all the above assumptions in check we were able to estimate the number of blocks optimal to obtain 80% statistical power. We also explored how different levels of variation between blocks and residual variation affect power of our tests. We also explore how power would change in resonse to changing values of our assumed parameters. Power calcuations were performed using the *simr* package (Green and MacLeod, 2016) in R.
 
 # Biomass
 
 ## Estimates of variation
 
-Total above-ground biomass (TAGB) estimates for one year old tropical forest succession are scarce in the literature. In their comprehensive review by Martin et al. (2013) compiled few regenerational plots one year after abandonment, from which TAGB can be estimated to be $\sim$ 14 Mg $\times$ ha $^{-1}$ (which gives `r 14 * 1000 * 0.0025` kg $\times$ 25 m$^{2}$ - vegetation plot used in our study). However, source studies were restricted only to secondary succession after pasture abandonment, which may affect biomass accumulation rates. In different study Mascaro et al. (2005) found that for forest gap succession following hurricane disturbance biomass after one year ranged widely with mean 78 $\pm$ 15 Mg $\times$ ha $^{-1}$ (`r 78 * 1000 * 0.0025` kg $\times$ 25 m$^{2}$). In our case we expected for the average biomass of experimental  plot to fall between these two values and we treated the above estimates as a lower and upper limit for our estimates. Firstly because we expect higher biomass accumulation rates in the primary forest matrix than in spontaneous succession in pastures. Secondly because we prepared plots in similar fashion trying to minimise unpredicted differences in gaps created after hurrican disturbance with variable initial conditions for regeneration. Study by Mascaro et al. (2005) provided us with estimates of variation, which from the same reason as  above we treated to be an upper limit for our system. Therefore we confidently assumed that in our 25 m$^2$ plots we would found approximately 100 kg of plant biomass with both $\sigma_{a}$ and $\sigma_{\varepsilon}$ of around 10 kg.
+Estimates of the total plant above-ground biomass (TAGB) for one year old tropical forest successional communities are scarce in the literature and some functional respoonces fitted to  available data may inaccurately predict TAGB for younger plant communities (Sierra et al 2007). From a comprehensive review by Martin, Newton, and Bullock (2013) from 607 secondary forest sites we were able to extract only two estimates of TAGB for plant community after one year of regeneration since abandonment. TAGB for these two plots averaged at $\sim$ 12 Mg $\times$ ha $^{-1}$ (which gives `r 12 * 1000 * 0.0025` kg $\times$ 25 m$^{2}$ for experimental plot used in our study). However, source studies were restricted only to secondary succession after pasture abandonment, which may negatively affect initial biomass accumulation rates. Different study of gap succession following hurricane disturbance in wet tropical forest by Mascaro et al. (2005) showed that after one year after disturbance TAGB averaged at 78 $\pm$ 15 Mg $\times$ ha $^{-1}$ (`r 78 * 1000 * 0.0025` kg $\times$ 25 m$^{2}$). In tropical forest regeneration following small slash-and-burn cultivation we expected TAGB in primary forest matrix to result in higher values than during spontaneous succession in pastures. At the same time we believe it should be lower than in naturally created gaps. Moreover, by design we tried to minimise unpredicted differences in initial conditions for regeneration, which should keep the variation between and within blocks small. Therefore for the theoretical distribution of plant biomass in a 25 m$^2$ plots we safely assumed log-normal distribution with $\mu$ = 100 kg and $\sigma_{a}$ = $\sigma_{\varepsilon}$ = 10 kg (Fig.1).
 
 ```{r setup, include=TRUE, echo=F, fig.height=4, fig.width=4, align="center"}
-
 # Estimates
 # tagb <- 100
 # mu=log(tagb)
@@ -38,27 +35,27 @@ set.seed(1234)
 tagb <- 100
 mu=log(tagb)
 # sigma2 = 0.0381 # sd = 20
-sigma2 = 0.01   # sd = 10
+sigma2 = 0.0099   # sd = 10
 sd = sqrt(sigma2)
 
+sdlognorm <- sqrt((exp(sigma2) -1)*exp(2*mu + sigma2))
+
 # Histogram of biomasses
-vals2 <- rlnorm(100000, mu, sd) # inputs are the mu and sd of the noorm vals
-hist(vals2, breaks=100, probability=T)
+vals2 <- rlnorm(1000000, mu, sd) # inputs are the mu and sd of the noorm vals
+hist(vals2, breaks=100, probability=T, col = "black", xlab = "Total above-ground plant biomass [kg]")
 ```
 
-Fig.1 B) Histogram of the logged biomass values (in kilograms) of a log-normal distribution with $\mu$ = `r tagb` kg, and $\sigma_{\varepsilon}$ = 10 kg.
-
-*For a 25 m$^2$ plot, this gives approximately TAGB. Unfortunately, we were not able to find any explicit estimates of variation for TAGB of a one year old successional vegetation. However, study mentioned TAGB for secondary forests averaging at 46.4 $\pm$ 4.3 T/ha (standard deviation). Based on simple proportional relationship we estimate that early successional plots might have $\sigma_{\varepsilon}\sim$ 10 kg. Because we assume that the biomass values follow log-normal distribution estimated that for the loged values of biomas $\sigma^2_{block}$ would be around 0.0054 (Fig.1 B).*
+Figure 1. Histogram of the expected total above-ground biomass values for a one year old successional plant community at a 25 m$^2$ experimental plot (in kilograms). Values generated from a log-normal distribution with $\mu$ = `r tagb` kg, and $\sigma_{\varepsilon}$ = `r round(sdlognorm,1)` kg.
 
 ## Randomization
 
 With the estimates for $\mu$, $\sigma^2_{a}$, $\sigma^2_{\varepsilon}$ and selected effect size we can now create a hypothetical dataset with an arbitrary number of blocks each having 6 experimental treatment (including control) and examine sample size necessary to obtain 80% statistical power.
 
-```{r, echo=F, warning=FALSE, message=F, align = "center", fig.show='hold',  fig.height=3, fig.width=5}
+```{r, echo=F, warning=FALSE, message=F, align = "center", fig.show='hold'}
 # pattern <- c(int,fung,h1,h2,ins,pred)
 
 mu = tagb
-mcrands <- 9
+mcrands <- 99
 sdg = sqrt(sigma2)
 sd = sqrt(sigma2)
 eff_size = 10
@@ -108,7 +105,7 @@ From this analysis we conclude that for the above assumptions we have 80% probab
 
 ## Estimates of variation
 
-We expected to find approximately 30 $\pm$ 5 plant species (herbaceous and woody plants) per plot (Leps, personal communication). It is difficult to estimates for the abundance of stems having DBH greater of equal to 1cm (Ohtsuka Biomass changes in early tropical succession..). However, based on Whitfeld et al. (2012) and from our experience we expected to have (similarily to the number of species) approximately 30 $\pm$ 5 stems per 25m$^2$ experimental plot. We assumed Poisson distribution for the number of species and number of stems. 
+We expected to find approximately 30 $\pm$ 5 plant species (herbaceous and woody plants) per plot (Leps, personal communication). It is difficult to estimates for the abundance of stems having DBH greater of equal to 1cm (Ohtsuka Biomass changes in early tropical succession..). Based on Whitfeld et al. (2012) and from our experience we expected to have (similarily to the number of species) approximately 30 $\pm$ 5 stems per 25m$^2$ experimental plot. We assumed Poisson distribution for the number of species and number of stems. 
 
 ## Randomization
 
@@ -116,9 +113,9 @@ As above we created random dataset for for number of species and abundance of st
 
 ```{r,echo=FALSE, warning=FALSE, message=FALSE, fig.show='hold'}
 mu = 30
-sdg = 5
-sd = 5
-eff_size = -5
+sdg = 6
+sd = 6
+eff_size = 6
 leff_size = log((mu + eff_size)/mu)
 
 # Create dataset
@@ -129,9 +126,13 @@ dat <- expand.grid(gard=gard, treat = treat)
 
 richexp <- makeGlmer(y~treat+(1|gard),
                     family = "poisson",
-                    fixef = c(log(mu),0,0,
-                              leff_size,-leff_size,-leff_size/2), 
-                    VarCorr = 0.0225, # estimated such that s_e is ~ 5.
+                    fixef = c(log(mu),                    # control
+                               -leff_size,                # fungi
+                               (leff_size/2+leff_size)/2, # herb moderate
+                               leff_size,                 # herbivory high
+                               -leff_size,                # insecticide
+                               leff_size/2),              # predator, 
+                    VarCorr = 0.225, # estimated such that s_e is ~ 5. 0.0225
                     data=dat)
 
 dt <- getData(richexp)
@@ -153,20 +154,20 @@ Fig X. ...
 
 # Sample  size, within-block and between-block variation
 
-Here we want do analyze sensitivity of our estimates on the expected power of our analyses. We perform a randomization manipulating three parameters: number of samples, between block variation and within block noise (within block variation) 
+At the last step we analyze sensitivity of the expected power to the variance of our variance estimates. For the TAGB for within blocks variation any value below 15 kg ensures acceptable power of out tests. For the richness and abundance the asumptions of the Poisson distribution indicates that the variance at the plot is equal to the average number of species/stems. Therefore, between block variation should not affect it much. We pthese should not be affected by changes in between block variation. 
 
-```{r}
+```{r, echo=F, warning=F, message=F, fig.show='hold'}
 
 # levelplot(resmatgard1, xlab = "Between block variation",
 #           ylab = "Number of blocks") +
 #   as.layer(contourplot(resmatgard1, col = "red"))
 
-vars <- seq(0.003, 0.30, by=0.015)
+vars <- round(seq(0.0005, 0.045, by=0.005), 4) #sd's
 resmatgard1 <- matrix(0, 
                       nrow = length(vars),
                       ncol = length(vars))
-rownames(resmatgard1) <- as.character(round(vars, 3))
-colnames(resmatgard1) <- as.character(round(vars, 3))
+rownames(resmatgard1) <- as.character(round(vars, 4))
+colnames(resmatgard1) <- as.character(round(vars, 4))
 
 
 mod <- bioexp
@@ -175,7 +176,6 @@ mcrands <- 9
 dims    <- length(vars)
 for (i in vars){
   for(j in vars){
-    counter <- counter + 1
     VarCorr(mod) <- i  #
     sigma(mod) <- sqrt(j)
     est <- powerSim(mod, nsim = mcrands, progress = F)
@@ -184,9 +184,46 @@ for (i in vars){
   }
 }
 
-levelplot(resmatgard1, ylab = "Sigma",
-          xlab = "VarCorr")
+# Rename rows and columns
+newnames <- c()
+for(value in vars){
+  vals <- rlnorm(10000, log(95), sqrt(value))
+  newnames <- c(newnames, sd(vals))
+}
 
+newnames <- round(newnames, 0)
+rownames(resmatgard1) <- as.character(newnames)
+colnames(resmatgard1) <- as.character(newnames)
+
+levelplot(resmatgard1, ylab = "Within block variation (Sigma)",
+          xlab = "Between block variation (VarCorr)") +
+  as.layer(contourplot(resmatgard1, col = "red"))
+
+# Repeat for the Poisson models. It will depend on the error in the mean estiamations
+mus <- seq(2,10,by=1)
+
+respois <- data.frame()
+for(mu in mus){
+  print(mu)
+  fixef(richexp) = c(log(mu),                    # control
+            -leff_size,                # fungi
+            (leff_size/2+leff_size)/2, # herb moderate
+            leff_size,                 # herbivory high
+            -leff_size,                # insecticide
+            leff_size/2)
+  est <- powerSim(richexp, nsim = mcrands, progress = F)
+  rowrand <- data.frame(mu = mu, 
+                        lower=summary(est)$lower,
+                        mean = summary(est)$mean,
+                        upper = summary(est)$upper)
+  respois <- rbind(respois,rowrand)
+}
+
+pplot <- ggplot(respois, aes(x = mu, y = mean))
+pplot + geom_pointrange(data=respois, 
+                mapping=aes(x=mu, y=mean, ymin=lower, ymax=upper), 
+                width=0.2, size=1, color="blue", fill="white") +
+  geom_hline(yintercept = 0.8)
 
 ```
 
@@ -197,6 +234,10 @@ of generalised linear mixed models by simulation.” _Methods in
 Ecology and Evolution_, *7*(4), 493-498. doi:
 10.1111/2041-210X.12504
 
+Lohbeck, M., Poorter, L., Martínez-Ramos, M., & Bongers, F. (2015). Biomass is the main driver of changes in ecosystem process rates during tropical forest succession. Ecology, 96(5), 1242–1252. doi: 10.1890/14-0472.1
+
 Martin, P. A., Newton, A. C., & Bullock, J. M. (2013). Carbon pools recover more quickly than plant biodiversity in tropical secondary forests. Proceedings of the Royal Society B: Biological Sciences. Retrieved from https://royalsocietypublishing.org/doi/abs/10.1098/rspb.2013.2236
 
 Mascaro, J., Perfecto, I., Barros, O., Boucher, D. H., Cerda, I. G. D. L., Ruiz, J., & Vandermeer, J. (2005). Aboveground Biomass Accumulation in a Tropical Wet Forest in Nicaragua Following a Catastrophic Hurricane Disturbance. Biotropica, 37(4), 600–608. doi: 10.1111/j.1744-7429.2005.00077.x
+
+Whitfeld et al. (2012)
