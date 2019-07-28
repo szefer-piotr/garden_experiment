@@ -171,15 +171,42 @@ colors = color=c("black","grey50","grey50","grey50","grey50","red",
 
 # png("figs/fig1.png",height = 5, width = 12, units = 'in',res=1200)
 # png("figs/fig1.png",width=1200, height = 400, res=700)
-fig1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
-                 geom="errorbar", color= colors, width=0.2, lwd=1.5) +
+# fig1 + stat_summary(fun.data=mean_cl_normal, fun.args = list(mult=1), 
+#                  geom="errorbar", color= colors, width=0.2, lwd=1.5) +
+#   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
+#   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
+#       strip.text = element_text(size=20),
+#       legend.justification=c(0.5,0.5), 
+#       legend.position="bottom")+xlab("")+ylab("")
+# 
+# fig1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+#                     geom="errorbar", color= colors, width=0.2, lwd=1.5) +
+#   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
+#   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
+#         strip.text = element_text(size=20),
+#         legend.justification=c(0.5,0.5), 
+#         legend.position="bottom")+xlab("")+ylab("")
+
+fig1 + stat_summary(fun.data=mean_cl_boot, 
+                    geom="pointrange", color= colors, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
-      strip.text = element_text(size=20),
-      legend.justification=c(0.5,0.5), 
-      legend.position="bottom")+xlab("")+ylab("")
+        strip.text = element_text(size=20),
+        legend.justification=c(0.5,0.5), 
+        legend.position="bottom")+xlab("")+ylab("")
+
 # dev.off()
+
+
+# Fig 1. Effect sizes
+
+summary(bio_rbl)$fixed
+fig1df <- as.data.frame(summary(bio_rbl)$coefficients)
+fig1df$trt <- rownames(fig1df)
+ggplot(fig1df, aes(x = trt, y=Estimate)) + geom_point()
 
 # >>> FIG. 2 ----
 
@@ -915,12 +942,8 @@ scl = 2
 
 x11(10,10)
 
+png("figs/fig3.png", width=7, height=7, units = "in", res = 800)
 
-
-
-
-
-png("figs/figXordination.png", width=7, height=7, units = "in", res = 800)
 # Selected species vectors
 selection <- rownames(summary(m)$species) %in% selected_s
 
@@ -928,30 +951,57 @@ selection <- rownames(summary(m)$species) %in% selected_s
 plot(m, type = "n", scaling = scl, xlab = "RDA1 [19.55%]",
      ylab = "RDA2 [4.37%]", cex.lab = 1.5)
 alpha = 200
+alpha2 = 100
 colvec <- c(rgb(230,159,0,alpha, max=255),
-            rgb(86,180,233,alpha, max=255),
+            rgb(86,180,233,alpha2, max=255),
             rgb(0,158,115,alpha, max=255),
-            rgb(0,114,178,alpha, max=255),
-            rgb(213,94,0,alpha, max=255),
-            rgb(240,228,66,alpha, max=255))
+            rgb(0,114,178,alpha2, max=255),
+            rgb(213,94,0,alpha2, max=255),
+            rgb(240,228,66,alpha2, max=255))
 # # Species
 # arrows(rep(0,dim(coord)[1]),  rep(0,dim(coord)[1]), coord[,1], coord[,2],
 #        code = 2, length = 0.05)
 
 # melanolepis multiglandulosa coordinates
-shift <- 0.15
+shift <- 0.25
 cl <- "grey60"
 pc <- 17
 
 # Points
+p1 <- 21
+p2 <- 17
+cx1 <- 3
+cx2 <- 1.5
+pch <- c(p1,p2,p1,p2,p2,p2)
+cex <- c(cx1,cx2,cx1,cx2,cx2,cx2)
+
 with(test, points(m, display = "sites", col = colvec[TREAT],
-                      scaling = scl, pch = 21, cex = 3, bg = colvec[TREAT]))
+                      scaling = scl, pch = pch[TREAT],
+                  cex = cex[TREAT], bg = colvec[TREAT]))
+
+# with(test, points(m, display = "sites", col = colvec,
+#                   scaling = scl, pch = c(p1,p2,p1,p2,p2,p2),
+#                   cex = 3, bg = colvec))
 
 # Centroid for the insecticide treatment
-points(0.76787487,0.079661336, pch = 4, cex = 1.5, lwd = 2.5, 
-       col = "darkcyan")
+# points(0.76787487,0.079661336, pch = 4, cex = 1.5, lwd = 2.5,
+# col = "darkcyan", scaliing = scl)
+
+# This draws only one ellipse
+# ti <- test$insecticide
+# ti[ti == 0] <- NA
+# ordiellipse(m, ti, col = "darkcyan", kind="se", conf=0.95, lwd=2)
+
+# This draws all the ellipses
+ordiellipse(m, test$TREAT, kind="se", conf=0.95, lwd=c(2,1,2,1,1,1),
+            lty=c(1,2,1,2,2,2),
+            col = colvec, scaling = scl)
+
+
 # text
 text(0.76787487+shift,0.079661336+shift, "Insecticide (I)", col = "darkcyan",
+     cex = 1.5)
+text(-0.9,-0.5, "Control (C)", col = "gold",
      cex = 1.5)
 
 # Legend

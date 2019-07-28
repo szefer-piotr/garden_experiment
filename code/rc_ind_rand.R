@@ -434,25 +434,36 @@ plotMeMyGraphs <- function(path){
   colours <- c("grey30","grey30","grey30","red", "grey30", "red",
                "grey30","grey30","grey30","grey30")
   
+  # pl <- ggplot(dataRC_facets,aes(x=treat, y=meanRC)) +
+  #   geom_jitter(colour = "grey80", width = 0.1, size = 2) +
+  #   geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey60") +
+  #   ylim(-1,1) + 
+  #   geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
+  #   facet_wrap(~type, scales="free", drop=TRUE) + 
+  #   theme_bw() + 
+  #   ylab("Within treatment dissimilarity (RC)") + xlab("")+
+  #   stat_summary(fun.data=mean_cl_boot, color = colours,
+  #                geom="pointrange",
+  #                position = position_dodge(width = 0.90)) 
+  
   pl <- ggplot(dataRC_facets,aes(x=treat, y=meanRC)) +
-    geom_jitter(colour = "grey80", width = 0.1, size = 2) +
-    geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey60") +
+    geom_line(aes(x=treat, y=meanRC, group=gard),
+              lty = 2, col = "grey60", alpha=0.5) +
+    geom_jitter(colour = "grey80", width = 0.025, size = 2) +
+    geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey80") +
     ylim(-1,1) + 
     geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
     facet_wrap(~type, scales="free", drop=TRUE) + 
     theme_bw() + 
     ylab("Within treatment dissimilarity (RC)") + xlab("")+
-    stat_summary(fun.data=mean_sdl, color = colours,
+    stat_summary(fun.data=mean_cl_boot, color = colours,
                  geom="pointrange",
                  position = position_dodge(width = 0.90)) 
   
     pl
 
-    
-    
-  #windows(800,600)
-  # Test for significance
   
+  # Test for significance
   dataRC_facets$ftreat <- as.factor(dataRC_facets$treat)
   for (comparison in unique(dataRC_facets$type)){
     subDat <- dataRC_facets[dataRC_facets$type == comparison,]
@@ -469,7 +480,7 @@ plotMeMyGraphs <- function(path){
 
 path <- c("datasets/trees_assembly")
 plot1 <- plotMeMyGraphs(path)
-png("figs/FigS4.png", width = 6, height=4, units="in", res = 800)
+png("figs/fig4.png", width = 6, height=4, units="in", res = 800)
 plot1$plot
 dev.off()
 

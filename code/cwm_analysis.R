@@ -93,14 +93,26 @@ colors = color=c("black","grey50","red","grey50","grey50","grey50",
 
 # png("figs/fig2.png",width=800, height = 400)
 png("figs/fig2.png",width=8, height = 4,units = 'in',res=1200)
-fig2 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
-                    geom="errorbar", color= colors, width=0.2, lwd=1.5) +
+
+# fig2 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+#                     geom="errorbar", color= colors, width=0.2, lwd=1.5) +
+#   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
+#   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
+#         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
+#         strip.text = element_text(size=20),
+#         legend.justification=c(0.5,0.5), 
+#         legend.position="bottom")+xlab("")+ylab("")
+
+fig2 + stat_summary(fun.data=mean_cl_boot, 
+                    geom="pointrange", color= colors, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
         strip.text = element_text(size=20),
         legend.justification=c(0.5,0.5), 
         legend.position="bottom")+xlab("")+ylab("")
+
+
 dev.off()
 
 # tree community ----
