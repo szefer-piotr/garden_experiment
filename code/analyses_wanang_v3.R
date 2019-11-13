@@ -1,4 +1,4 @@
-# 0. Load data and packages ----
+# 0. Load data, functions and packages ----
 
 library(dplyr)
 library(lme4)
@@ -9,15 +9,7 @@ library(car)
 library(vegan)
 library(MASS)
 library(betareg)
-
-# install.packages("lmerTest")#,"Hmisc"))
-# install.packages("Hmisc") #for the stat_summary plots
-# # install.packages("brms") #change that file
-# install.packages("car")
-# install.packages("vegan")
-# install.packages("MASS")
-# install.packages("betareg")
-# install.packages("ggplot2")
+library(blmeco)
 
 contingencyTable2 <- function(dataset, ROW, COL, VALUE){
   # Get rid of the empty factors
@@ -76,7 +68,7 @@ test <- test[rownames(test) != "WG1P6", ]
 tree_test <- tree_test[rownames(tree_test) != "WG1P6", ]
 
 
-# Statistical models -----
+# 1. Statistical models -----
 
 # Cumulative biomass
 bio_rbl <- lmer(log(BIO) ~ TREAT + (1|GARDEN),
@@ -100,7 +92,6 @@ AIC(spn_rbl, spn_rbl2)
 summary(spn_rbl2)
 summary(spn_rbl)
 
-
 # Diversity
 div_rbl <- lmer(SW ~ TREAT + (1|GARDEN),
                 data = test)
@@ -122,37 +113,21 @@ abu_nb_rbl <- glmer.nb(stems ~ TREATMENT + (1|GARDEN),
 summary(abu_rbl)
 summary(abu_nb_rbl)
 
-library(blmeco)
 # Here is the test for overdispersion and with Poisson there is an overdispersion
 dispersion_glmer(abu_rbl) # should not exceed 1.4
 dispersion_glmer(abu_nb_rbl)
 
+# And see if we achieved improvement by extra overdispersion parameter
 AIC(abu_rbl, abu_nb_rbl)
 
-# Optional likelihood ratio test
-# #compute a model where the effect of status is estimated
-# unrestricted_fit <- lmer(
-#   formula = SPEC_NO ~ (1|GARDEN) + TREAT,
-#   REML = F,
-#   data = test
-# )
-# 
-# restricted_fit = lmer(
-#   formula = SPEC_NO ~ (1|GARDEN),
-#   REML = F,
-#   data = test#because we want to compare models on likelihood
-# )
-# 
-# #compute the AIC-corrected log-base-2 likelihood ratio (a.k.a. "bits" of evidence)
-# (AIC(restricted_fit)-AIC(unrestricted_fit))*log2(exp(1))
+# 1.b Generate plots! -----
 
-# Generate plots! -----
-# Biomass for all, shannon's diverstiy, number of stems
+# Panel for biomass, shannon's diverstiy, number of stems
 panel_plot_staked_data <- rbind(setNames(test[,c("TREAT","BIO")],c("treat","val")),
                                 setNames(test[,c("TREAT","SW")],c("treat","val")),
                                 setNames(tree_test[,c("TREATMENT","stems")], c("treat","val")))
 
-# Refactor
+# Change the order of factors
 panel_plot_staked_data$treat <- factor(panel_plot_staked_data$treat,
                                        labels = c("C", "F", "I", "P", "H2", "H1"))
 panel_plot_staked_data$treat  <- ordered(panel_plot_staked_data$treat, 
@@ -165,7 +140,10 @@ panel_plot_staked_data$type <- ordered(panel_plot_staked_data$type,
 
 # >>> FIG. 1 -----
 fig1 <- ggplot(panel_plot_staked_data, aes(x=treat, y=val)) + 
-  facet_wrap(~type, scales = "free") + 
+  facet_wrap(~type, scales = "free", strip.position = "left",
+             labeller = as_labeller(c(Biomass = "Biomass [kg]", 
+                                      Diversity= "Diversity [H']",
+                                      Abundance = "Individuals") )) + 
   geom_point(col = "grey80", alpha = 0.5, cex = 4) + 
   theme_bw()
 
@@ -174,25 +152,6 @@ colors = color=c("black","grey50","grey50","grey50","grey50","red",
                  "black","red","grey50","grey50","grey50","red")
 
 # png("figs/fig1.png",height = 5, width = 12, units = 'in',res=1200)
-# png("figs/fig1.png",width=1200, height = 400, res=700)
-# fig1 + stat_summary(fun.data=mean_cl_normal, fun.args = list(mult=1), 
-#                  geom="errorbar", color= colors, width=0.2, lwd=1.5) +
-#   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
-#   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
-#         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
-#       strip.text = element_text(size=20),
-#       legend.justification=c(0.5,0.5), 
-#       legend.position="bottom")+xlab("")+ylab("")
-# 
-# fig1 + stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
-#                     geom="errorbar", color= colors, width=0.2, lwd=1.5) +
-#   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
-#   theme(axis.text.x=element_text(angle=0, size=20, hjust=0.5),
-#         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
-#         strip.text = element_text(size=20),
-#         legend.justification=c(0.5,0.5), 
-#         legend.position="bottom")+xlab("")+ylab("")
-
 fig1 + stat_summary(fun.data=mean_cl_boot, 
                     geom="pointrange", color= colors, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
@@ -200,26 +159,17 @@ fig1 + stat_summary(fun.data=mean_cl_boot,
         axis.text.y=element_text(angle=0, size=20, hjust=0.5),
         strip.text = element_text(size=20),
         legend.justification=c(0.5,0.5), 
-        legend.position="bottom")+xlab("")+ylab("")
-
+        legend.position="bottom",
+        strip.background = element_blank(),
+        strip.placement = "outside")+xlab("")+ylab("")
 # dev.off()
-
-
-# Fig 1. Effect sizes
-
-summary(bio_rbl)$fixed
-fig1df <- as.data.frame(summary(bio_rbl)$coefficients)
-fig1df$trt <- rownames(fig1df)
-ggplot(fig1df, aes(x = trt, y=Estimate)) + geom_point()
 
 # >>> FIG. 2 ----
 
-# cwm_analysis.R
+# with(source("code/cwm_analysis.R"),{fig2})
 
 
-
-# >>> FIG. 3 SPECIES LEVEL ANALYSIS----
-
+# >>> FIG. S3 SPECIES LEVEL ANALYSIS----
 # main and tree datasets
 comb <- expand.grid(unique(main$TREAT)[3], unique(main$TREAT))
 comb <- comb[-which(comb[,1] == comb[,2]),]
@@ -946,7 +896,7 @@ scl = 2
 
 x11(10,10)
 
-png("figs/fig3.png", width=7, height=7, units = "in", res = 800)
+# png("figs/fig3.png", width=7, height=7, units = "in", res = 800)
 
 # Selected species vectors
 selection <- rownames(summary(m)$species) %in% selected_s
@@ -1012,7 +962,7 @@ text(-0.9,-0.5, "Control (C)", col = "gold",
 with(test, legend("topright",
                   legend = c("C","F","I","P","H2","H1"), bty = "n",
                   col = colvec, pch = 21, pt.bg = colvec))
-dev.off()
+# dev.off()
 
 
 
@@ -1375,7 +1325,7 @@ library(multcompView)
 library(lsmeans)
 
 marginal = lsmeans(lmerherb,~ SP_CODE)
-CLD = cld(marginal,alpha=0.1,Letters=letters,adjust="tukey")
+CLD = cld(marginal,alpha=0.05,Letters=letters,adjust="tukey")
 
 pd = position_dodge(0.4)
 p1 <- ggplot(CLD, aes(x=SP_CODE, y=lsmean,label=.group)) +
