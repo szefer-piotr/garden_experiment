@@ -70,7 +70,7 @@ With the above approximations of real $\mu$, $\sigma^2_{a}$, $\sigma^2_{\varepsi
 ```{r, echo=F, warning=FALSE, message=F, align = "center", fig.show='hold'}
 # pattern <- c(int,fung,h1,h2,ins,pred)
 mu = tagb
-mcrands <- 9
+mcrands <- 999
 sdg = sqrt(sigma2)
 sd = sqrt(sigma2)
 eff_size = tagb * ef
@@ -215,7 +215,7 @@ bioexp <- makeLmer(y~treat+(1|gard),
 
 
 mod <- bioexp
-mcrands <- 9
+mcrands <- 999
 
 dims    <- length(vars)
 for (i in vars){

@@ -896,7 +896,7 @@ scl = 2
 
 x11(10,10)
 
-# png("figs/fig3.png", width=7, height=7, units = "in", res = 800)
+png("figs/fig3.png", width=7, height=7, units = "in", res = 800)
 
 # Selected species vectors
 selection <- rownames(summary(m)$species) %in% selected_s
@@ -961,8 +961,8 @@ text(-0.9,-0.5, "Control (C)", col = "gold",
 # Legend
 with(test, legend("topright",
                   legend = c("C","F","I","P","H2","H1"), bty = "n",
-                  col = colvec, pch = 21, pt.bg = colvec))
-# dev.off()
+                  col = colvec, pch = pch, pt.bg = colvec))
+dev.off()
 
 
 
