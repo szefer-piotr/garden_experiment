@@ -1,8 +1,18 @@
 write.table(dataRC_facets, "datasets/dataRC")
-read.table("datasets/dataRC.txt")
+
+read.table("datasets/dataRC", header=T)
+getwd()
 
 rcdat <- dataRC_facets[49:60,] # insecticide
-main
+
+# CWM for trees
+names(tree)
+tree$codetrt <- 
+tree$props <- tapply(tree$WEIGHT,)
+tree$slaw <- tree$WEIGHT * tree$
+
+
+
 sladat <- cwmpanel[cwmpanel$type == "Specific Leaf Area" & cwmpanel$treat %in% c("C","I"), ]
 sladat <- cwmpanel[cwmpanel$type == "Leaf Dry Matter Content" & cwmpanel$treat %in% c("C","I"), ]
 
