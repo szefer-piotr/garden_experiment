@@ -78,7 +78,10 @@ bio_rbl_t <- lmer(logBio ~ TREATMENT + (1|GARDEN),
                 data = tree_test) 
 
 summary(bio_rbl)
+confint(bio_rbl)
+
 summary(bio_rbl_t)
+confint(bio_rbl_t)
 
 # Richness
 spn_rbl <- lmer(SPEC_NO ~ TREAT + (1|GARDEN),
@@ -87,14 +90,40 @@ spn_rbl <- lmer(SPEC_NO ~ TREAT + (1|GARDEN),
 spn_rbl2 <- glmer(SPEC_NO ~ TREAT + (1|GARDEN),
                  data = test, family = "poisson")
 
+spn_rblt <- lmer(species ~ TREATMENT + (1|GARDEN),
+                data = tree_test)
+spn_rbl2t <- glmer(species ~ TREATMENT + (1|GARDEN),
+                   data = tree_test,family = "poisson")
 
 AIC(spn_rbl, spn_rbl2)
+# Poisson
 summary(spn_rbl2)
-summary(spn_rbl)
+confint(spn_rbl2)
+summary(spn_rbl2t)
+confint(spn_rbl2t)
+
 
 # Diversity
 div_rbl <- lmer(SW ~ TREAT + (1|GARDEN),
                 data = test)
+div_rbl_t <- lmer(DivTree ~ TREATMENT + (1|GARDEN),
+                data = tree_test)
+
+summary(div_rbl)
+confint(div_rbl)
+summary(div_rbl_t)
+confint(div_rbl_t)
+
+# Evenness
+eve_rbl <- lmer(EVEN ~ TREAT + (1|GARDEN),
+                data = test)
+eve_rbl_t <- lmer(Evenness ~ TREATMENT + (1|GARDEN),
+                  data = tree_test)
+
+summary(eve_rbl)
+confint(eve_rbl)
+summary(eve_rbl_t)
+confint(eve_rbl_t)
 
 ## Simpson
 divSimp_rbl <- lmer(log(SIMP) ~ TREAT + (1|GARDEN),
@@ -110,8 +139,18 @@ abu_rbl <- glmer(stems ~ TREATMENT + (1|GARDEN),
 abu_nb_rbl <- glmer.nb(stems ~ TREATMENT + (1|GARDEN),
                  data = tree_test)
 
+mean(tapply(tree_test$stems, tree_test$TREATMENT, mean))
+
 summary(abu_rbl)
 summary(abu_nb_rbl)
+library(emmeans)
+emmeans(abu_nb_rbl,"TREATMENT",adjust = "tukey")
+emmeans(abu_nb_rbl, list(pairwise~TREATMENT))
+
+library(lme4)
+effect.out.lme <- effect(term = "TREATMENT", 
+                         mod = abu_nb_rbl)
+
 
 # Here is the test for overdispersion and with Poisson there is an overdispersion
 dispersion_glmer(abu_rbl) # should not exceed 1.4
@@ -152,6 +191,8 @@ colors = color=c("black","grey50","grey50","grey50","grey50","red",
                  "black","red","grey50","grey50","grey50","red")
 
 # png("figs/fig1.png",height = 5, width = 12, units = 'in',res=1200)
+png("/home/piotrszefer/garden_experiment/figs/Figure_1.png",height = 4, width = 10, units = 'in',res=900)
+
 fig1 + stat_summary(fun.data=mean_cl_boot, 
                     geom="pointrange", color= colors, width=0.2, lwd=1.5) +
   stat_summary(fun.y=mean, geom="point", color=colors, cex = 5) +
@@ -162,7 +203,7 @@ fig1 + stat_summary(fun.data=mean_cl_boot,
         legend.position="bottom",
         strip.background = element_blank(),
         strip.placement = "outside")+xlab("")+ylab("")
-# dev.off()
+dev.off()
 
 # >>> FIG. 2 ----
 
@@ -896,7 +937,7 @@ scl = 2
 
 x11(10,10)
 
-png("figs/fig3.png", width=7, height=7, units = "in", res = 800)
+# png("figs/fig3.png", width=7, height=7, units = "in", res = 800)
 
 # Selected species vectors
 selection <- rownames(summary(m)$species) %in% selected_s
@@ -962,7 +1003,7 @@ text(-0.9,-0.5, "Control (C)", col = "gold",
 with(test, legend("topright",
                   legend = c("C","F","I","P","H2","H1"), bty = "n",
                   col = colvec, pch = pch, pt.bg = colvec))
-dev.off()
+# dev.off()
 
 
 
@@ -1385,9 +1426,9 @@ p3 <- ggplot(CLD, aes(x=SP_CODE, y=lsmean,label=.group)) +
 
 #p3
 
-png("figs/figXtukey.png", width=800, height = 300)
+# png("figs/figXtukey.png", width=800, height = 300)
 multiplot(p1, p2, p3, cols=3)
-dev.off()
+# dev.off()
 
 
 # All traits plots -----
@@ -1463,7 +1504,7 @@ ggplot(tvsrda, aes(x = SLA, y = rda)) +
 source("code/cwm_analysis.R")
 traitdat <- traitdat[rownames(m$CA$u), ]
 
-png("figs/figSxord.png", width=800, height=300)
+# png("figs/figSxord.png", width=800, height=300)
 par(mfrow=c(1,3))
 sherb <- ordisurf(m, traitdat$cwmherb,family="gaussian", col="darkcyan",
                   main = "Herbivory")
@@ -1475,7 +1516,7 @@ sldmc <- ordisurf(m, traitdat$cwmldmc,family="gaussian", col="darkcyan",
                   main = "LDMC")
 text(m, display="bp", col="darkcyan", lwd=2)
 
-dev.off()
+# dev.off()
 
 
 

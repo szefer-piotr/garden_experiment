@@ -2,7 +2,7 @@
 library(dplyr)
 
 # full community ----
-main <- read.table("datasets/wng_main_clean.txt", header = T) #506 rows
+main <- read.table("/home/piotrszefer/garden_experiment/datasets/wng_main_clean.txt", header = T) #506 rows
 main <- main %>%
   filter(!is.na(main$SLA) & main$SLA < 1000 & main$SLA != 0) #496 obs
 
@@ -96,9 +96,9 @@ fig2 <- ggplot(cwmpanel, aes(x=treat, y=val)) +
 
 
 # png("figs/fig2.png",width=800, height = 400)
-# png("figs/fig2.png",width=8, height = 4,units = 'in',res=1200)
+png("/home/piotrszefer/garden_experiment/figs/Figure_4.png",width=8, height = 4,units = 'in',res=900)
 fig2
-# dev.off()
+dev.off()
 
 # tree community ----
 main <- read.table("datasets/wng_main_clean.txt", header = T) #506 rows

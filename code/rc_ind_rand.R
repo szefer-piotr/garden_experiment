@@ -477,7 +477,7 @@ plotMeMyGraphs <- function(path){
 
 
 # Read the data from the file ------
-
+path <- c("/home/piotrszefer/garden_experiment/datasets/trees_assembly")
 path <- c("datasets/trees_assembly")
 plot1 <- plotMeMyGraphs(path)
 png("figs/fig4.png", width = 6, height=4, units="in", res = 800)
@@ -553,3 +553,164 @@ tapply(dbh_data$sp_code, dbh_data$code, function(x){length(unique(x))})
 #   return(list(COM = randCom1))
 # }
 
+# PLOTTING THE FINAL PLOT ----
+
+path <- c("/home/piotrszefer/garden_experiment/datasets/trees_assembly")
+
+# Check all the txt files with a word CONTROL in them (RC matrices)
+file_names <- list.files(path)[str_detect(list.files(path), "CONTROL")]
+
+# Data for facets and to store results, mean, lose, upse, type
+dataRC_facets <- data.frame()
+
+# For each file name calculate mean values of inter treatmet comparisons
+for(file in 1:length(file_names)) {
+  rcmatrix <- read.table(paste(path,"/",file_names[file], sep =""))
+  
+  # Fill the whole matrix with values from th elower triangle
+  rcmatrix[upper.tri(rcmatrix)] <- rcmatrix[lower.tri(rcmatrix)]
+  
+  # Subset the treatment dataset only to these plots
+  sub_treat <- WNGtreat[WNGtreat$PLOT_CODE %in% rownames(rcmatrix), ]
+  
+  # Now for a given plot of a specific treatment, take mean RCval of this
+  # plot with all the others from the same treatment
+  resRC <- data.frame()
+  
+  for (row in 1:dim(sub_treat)[1]){
+    plt <- sub_treat$PLOT_CODE[row]
+    trt <- sub_treat$TREAT[row]
+    grd <- sub_treat$GARDEN[row]
+    
+    # Print current row
+    print(c(plt,trt,grd))
+    
+    # Other plots belonging to the same treatment
+    trtPlots <- as.character(sub_treat[sub_treat$TREAT == trt, ]$PLOT_CODE)
+    
+    print(trtPlots)
+    
+    mRC <- mean(as.numeric(rcmatrix[rownames(rcmatrix) == plt,
+                                    (colnames(rcmatrix) %in% trtPlots)]), na.rm=T)
+    
+    print(mRC)
+    
+    # Add reults to the resRC data
+    rowRC <- data.frame(plot=plt,
+                        treat = trt,
+                        gard = grd,
+                        meanRC = mRC)
+    resRC <- rbind(resRC, rowRC)
+  }
+  resRC$type <- paste(file_names[file])
+  dataRC_facets <- rbind(dataRC_facets,resRC)
+}
+
+
+
+# 3b. ggplot facet plots
+
+dataRC_facets
+dataRC_facets_plot <- data.frame()
+
+for (comparison in unique(dataRC_facets$type)){
+  subDat <- dataRC_facets[dataRC_facets$type == comparison,]
+  subDat$treat <- as.character(subDat$treat)
+  subDat$gard <- as.character(subDat$gard)
+  subDat$plot <- as.character(subDat$plot)
+  
+  meanRc <- tapply(subDat$meanRC, subDat$treat, mean)
+  Vars   <- tapply(subDat$meanRC, subDat$treat, var)
+  upSE   <- meanRc + sqrt(Vars)
+  loSE   <- meanRc - sqrt(Vars)
+  
+  subRes <- data.frame(meanRC = meanRc, lose = loSE, upse = upSE,
+                       treat = names(meanRc),
+                       type = c(comparison, comparison))
+  
+  dataRC_facets_plot <- rbind(dataRC_facets_plot,
+                              subRes)
+  
+}
+
+dataRC_facets_plot$treat <- as.character(dataRC_facets_plot$treat)
+dataRC_facets_plot$type <- as.character(dataRC_facets_plot$type)
+dataRC_facets_plot$type <- gsub("mat_", "", dataRC_facets_plot$type)
+dataRC_facets_plot$type <- gsub(".txt", "", dataRC_facets_plot$type)
+dataRC_facets_plot$type <- gsub("_", " vs ", dataRC_facets_plot$type)
+
+# pl <- ggplot() +
+#   geom_errorbar(data=dataRC_facets_plot,
+#                 mapping=aes(x=treat, ymin=lose, ymax=upse), width=0.2,
+#                 size=1, color="gray60") + ylab("Within treatment dissimilarity (RC)") +
+#   geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey60") +
+#   geom_point(data=dataRC_facets_plot, mapping=aes(x=treat, y=meanRC), size=4, shape=21,
+#              fill="black")+
+#   ylim(-1,1) + geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
+#   facet_wrap(~type, scales="free", drop=TRUE) + theme_bw()+
+#   theme(axis.text.x=element_text(angle=90, hjust=1))
+# 
+
+
+# Different plot
+unique(dataRC_facets$treat)
+dataRC_facets$type <- factor(dataRC_facets$type, 
+                             levels = c("mat_FUNGICIDE_CONTROL.txt",
+                                        "mat_INSECTICIDE_CONTROL.txt",
+                                        "mat_CONTROL_PREDATOR.txt",
+                                        "mat_CONTROL_WEEVIL25.txt",
+                                        "mat_CONTROL_WEEVIL125.txt"
+                             ))
+
+dataRC_facets$type <- factor(dataRC_facets$type, 
+                             labels = c("C vs. F",
+                                        "C vs. I",
+                                        "C vs. P",
+                                        "C vs. H1",
+                                        "C vs. H2"
+                             ))
+
+unique(dataRC_facets$treat)
+dataRC_facets$treat <- factor(dataRC_facets$treat, 
+                              labels = c("C",
+                                         "P",
+                                         "H2",
+                                         "H1",
+                                         "F",
+                                         "I"
+                              ))
+
+colours <- c("grey30","grey30","grey30","red", "grey30", "red",
+             "grey30","grey30","grey30","grey30")
+
+# pl <- ggplot(dataRC_facets,aes(x=treat, y=meanRC)) +
+#   geom_jitter(colour = "grey80", width = 0.1, size = 2) +
+#   geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey60") +
+#   ylim(-1,1) + 
+#   geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
+#   facet_wrap(~type, scales="free", drop=TRUE) + 
+#   theme_bw() + 
+#   ylab("Within treatment dissimilarity (RC)") + xlab("")+
+#   stat_summary(fun.data=mean_cl_boot, color = colours,
+#                geom="pointrange",
+#                position = position_dodge(width = 0.90)) 
+
+pl <- ggplot(dataRC_facets,aes(x=treat, y=meanRC)) +
+  geom_line(aes(x=treat, y=meanRC, group=gard),
+            lty = 2, col = "grey60", alpha=0.5) +
+  geom_jitter(colour = "grey80", width = 0.025, size = 2) +
+  geom_hline(yintercept = c(0), lty=4, lwd = 1.1, col="grey80") +
+  ylim(-1,1) + 
+  geom_hline(yintercept = c(1, -1), lty=2, col="grey60") +
+  facet_wrap(~type, scales="free", drop=TRUE) + 
+  theme_bw() + 
+  ylab("Within treatment dissimilarity (RC)") + xlab("")+
+  stat_summary(fun.data=mean_cl_boot, color = colours,
+               geom="pointrange",
+               position = position_dodge(width = 0.90)) 
+# 
+# pdf("/home/piotrszefer/garden_experiment/figs/Figure_4.pdf", width = 6 ,
+#     height = 4)
+png("/home/piotrszefer/garden_experiment/figs/Figure_2.png", height = 4, width = 6, units = 'in',res=1200)
+pl
+dev.off()
